@@ -51,18 +51,29 @@ export const sessionService = {
     },
 
     // GET: Fetch active sessions only (for students)
+    // Note: Simplified query to avoid complex index requirements
     getActiveSessions: async (classId) => {
         try {
-            const q = query(
-                collection(db, "classes", classId, "sessions"),
-                where("isActive", "==", true),
-                orderBy("createdAt", "desc")
-            );
-            const querySnapshot = await getDocs(q);
-            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // First try with isActive filter
+            const sessionsRef = collection(db, "classes", classId, "sessions");
+            const querySnapshot = await getDocs(sessionsRef);
+
+            // Filter client-side to avoid index issues
+            const sessions = querySnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(session => session.isActive !== false) // Include if isActive is true or undefined
+                .sort((a, b) => {
+                    // Sort by createdAt descending
+                    const timeA = a.createdAt?.toMillis?.() || 0;
+                    const timeB = b.createdAt?.toMillis?.() || 0;
+                    return timeB - timeA;
+                });
+
+            console.log(`Found ${sessions.length} active sessions for class ${classId}`);
+            return sessions;
         } catch (error) {
             console.error("Error fetching active sessions:", error);
-            throw error;
+            return []; // Return empty array instead of throwing
         }
     }
 };
