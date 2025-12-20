@@ -330,40 +330,88 @@ const SessionWorkspace = () => {
                 {activeTab === 'appreciation' && (
                     <div className="tool-appreciation">
                         {!sessionData.referenceImageUrl ? (
-                            <p>No reference image set for this session.</p>
+                            <p style={{ color: 'var(--text-sub)' }}>이 세션에 참조 이미지가 설정되지 않았습니다.</p>
                         ) : (
                             <div style={{ display: 'flex', gap: '2rem', flexDirection: 'column' }}>
-                                <div className="stage-1" style={{ display: 'flex', gap: '2rem' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <h3>Step 1: Deep Observation</h3>
-                                        <img src={sessionData.referenceImageUrl} alt="Reference" style={{ maxWidth: '100%', borderRadius: '0.5rem', maxHeight: '400px' }} />
+                                {/* Stage 1: Observation */}
+                                <div className="stage-1" style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                                    <div style={{ flex: '1 1 300px' }}>
+                                        <h3>📖 1단계: 깊이 감상하기</h3>
+                                        <img src={sessionData.referenceImageUrl} alt="참조 작품" style={{ maxWidth: '100%', borderRadius: '1rem', maxHeight: '400px', boxShadow: 'var(--shadow)' }} />
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <h3>What do you see?</h3>
-                                        <p>Describe the colors, lines, and feelings.</p>
+                                    <div style={{ flex: '1 1 300px' }}>
+                                        <h3>👀 무엇이 보이나요?</h3>
+                                        <p style={{ color: 'var(--text-sub)' }}>색, 선, 느낌을 자세히 적어보세요.</p>
                                         <textarea
                                             value={userCritique}
                                             onChange={e => setUserCritique(e.target.value)}
-                                            style={{ width: '100%', height: '150px' }}
-                                            placeholder="I see..."
+                                            style={{ width: '100%', height: '150px', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #ddd' }}
+                                            placeholder="나는 이 그림에서... 를 보았다"
                                         />
-                                        <button onClick={handleCritiqueRefinement} className="btn-secondary" style={{ marginTop: '0.5rem' }}>Get AI Help</button>
-                                        {refinedCritique && <div style={{ background: '#f0f9ff', padding: '0.5rem', marginTop: '0.5rem', borderRadius: '0.5rem' }}>AI Suggestion: {refinedCritique}</div>}
+                                        <button onClick={handleCritiqueRefinement} style={{ marginTop: '0.5rem', padding: '0.5rem 1rem', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>
+                                            ✨ AI 도움 받기
+                                        </button>
+                                        {refinedCritique && (
+                                            <div style={{ background: '#fef3c7', padding: '1rem', marginTop: '0.5rem', borderRadius: '0.5rem' }}>
+                                                <strong>AI 제안:</strong> {refinedCritique}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
-                                <div className="stage-2" style={{ borderTop: '1px solid #eee', paddingTop: '1rem' }}>
-                                    <h3>Step 2: Recreation & Comparison</h3>
-                                    <p>Try to recreate this artwork using your observation words!</p>
-                                    <button
-                                        className="btn-primary"
-                                        onClick={() => {
-                                            setGenPrompt(userCritique); // Copy observation to prompt
-                                            setActiveTab('creation'); // Switch to creation tab
-                                            alert("Your observation has been copied to the Creation Tool! Submit it to see what happens.");
-                                        }}
-                                    >
-                                        Go to Creation Tool with my Observation
+                                {/* Stage 2: Recreation */}
+                                <div className="stage-2" style={{ borderTop: '2px solid var(--primary)', paddingTop: '1.5rem' }}>
+                                    <h3>🎨 2단계: 재창조하기</h3>
+                                    <p style={{ color: 'var(--text-sub)' }}>감상한 내용을 바탕으로 AI가 새로운 이미지를 만들어요!</p>
+                                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                                        <button
+                                            style={{ padding: '1rem 2rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '2rem', cursor: 'pointer', fontWeight: '600' }}
+                                            onClick={() => {
+                                                if (!userCritique) {
+                                                    alert("먼저 1단계에서 감상을 작성해주세요!");
+                                                    return;
+                                                }
+                                                setGenPrompt(userCritique);
+                                                setActiveTab('creation');
+                                            }}
+                                        >
+                                            🖌️ 내 감상으로 그림 만들기
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Stage 3: Comparison */}
+                                <div className="stage-3" style={{ borderTop: '2px solid var(--primary)', paddingTop: '1.5rem' }}>
+                                    <h3>🔍 3단계: 비교하기</h3>
+                                    <p style={{ color: 'var(--text-sub)' }}>원본 작품과 AI가 만든 작품을 나란히 비교해보세요.</p>
+                                    <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                                        <div style={{ flex: '1 1 250px', textAlign: 'center' }}>
+                                            <h4 style={{ marginBottom: '0.5rem' }}>📌 원본 작품</h4>
+                                            <img src={sessionData.referenceImageUrl} alt="원본" style={{ maxWidth: '100%', borderRadius: '0.5rem', border: '3px solid var(--primary)' }} />
+                                        </div>
+                                        <div style={{ flex: '1 1 250px', textAlign: 'center' }}>
+                                            <h4 style={{ marginBottom: '0.5rem' }}>🤖 AI 재창조 작품</h4>
+                                            {myGenerations.filter(g => g.status === 'published').length > 0 ? (
+                                                <img src={myGenerations.filter(g => g.status === 'published')[0].imageUrl} alt="AI 제작" style={{ maxWidth: '100%', borderRadius: '0.5rem', border: '3px solid var(--accent)' }} />
+                                            ) : (
+                                                <div style={{ padding: '3rem', background: '#f8f8f8', borderRadius: '0.5rem', color: 'var(--text-sub)' }}>
+                                                    아직 생성된 이미지가 없어요.<br />2단계에서 그림을 만들어보세요!
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Stage 4: Reflection */}
+                                <div className="stage-4" style={{ borderTop: '2px solid var(--primary)', paddingTop: '1.5rem' }}>
+                                    <h3>📝 4단계: 성찰하기</h3>
+                                    <p style={{ color: 'var(--text-sub)' }}>두 작품을 비교하며 느낀 점을 작성해보세요.</p>
+                                    <textarea
+                                        placeholder="원본과 AI가 만든 그림을 비교했을 때, 나는...&#10;비슷한 점:&#10;다른 점:&#10;이 활동을 통해 배운 것:"
+                                        style={{ width: '100%', height: '200px', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #ddd', marginTop: '1rem' }}
+                                    />
+                                    <button style={{ marginTop: '1rem', padding: '1rem 2rem', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '2rem', cursor: 'pointer', fontWeight: '600' }}>
+                                        ✅ 감상 완료하기
                                     </button>
                                 </div>
                             </div>
