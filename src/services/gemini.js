@@ -1,24 +1,28 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+/**
+ * Gemini AI 서비스 (클라이언트)
+ * 실제 AI 호출은 서버(/api/ai)에서 수행 — API 키는 클라이언트에 존재하지 않는다.
+ */
 
-// Initialize Gemini API
-// Note: In production, it's better to proxy this through backend, 
-// but for prototype/MVP, we can use client-side with awareness of key exposure risk or restricted keys.
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "YOUR_API_KEY_HERE";
-const genAI = new GoogleGenerativeAI(apiKey);
+async function callAI(payload) {
+    const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.error || `AI 서버 오류 (${response.status})`);
+    }
+    return data;
+}
 
 export const geminiService = {
     // Vision Analysis
     analyzeImage: async (imageFile, systemPrompt) => {
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-            // Convert file to base64
-            const base64Data = await fileToGenerativePart(imageFile);
-
-            const prompt = systemPrompt || "Analyze this artwork's elements and principles.";
-            const result = await model.generateContent([prompt, base64Data]);
-            const response = await result.response;
-            return response.text();
+            const image = await fileToResizedBase64(imageFile);
+            const data = await callAI({ action: "analyze", image, prompt: systemPrompt });
+            return data.text;
         } catch (error) {
             console.error("Gemini Vision Error:", error);
             throw error;
@@ -28,39 +32,19 @@ export const geminiService = {
     // Text Refinement / Expression Helper
     refineText: async (userText, systemPrompt) => {
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const prompt = `
-        System Instruction: ${systemPrompt || "Help the student express their feelings about art better."}
-        
-        Student Input: "${userText}"
-        
-        Response:
-      `;
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            return response.text();
+            const data = await callAI({ action: "refine", text: userText, systemPrompt });
+            return data.text;
         } catch (error) {
             console.error("Gemini Text Error:", error);
             throw error;
         }
     },
 
-    // Chatbot (Multi-turn - Simplified as single turn with context for now)
+    // Chatbot (Multi-turn)
     chatWithPersona: async (history, message, systemInstruction) => {
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-            const chat = model.startChat({
-                history: history, // [{role: "user" | "model", parts: [{text: ...}]}]
-                generationConfig: {
-                    maxOutputTokens: 500,
-                },
-                systemInstruction: { role: "system", parts: [{ text: systemInstruction }] }
-            });
-
-            const result = await chat.sendMessage(message);
-            const response = await result.response;
-            return response.text();
+            const data = await callAI({ action: "chat", history, message, systemInstruction });
+            return data.text;
         } catch (error) {
             console.error("Gemini Chat Error:", error);
             throw error;
@@ -68,19 +52,42 @@ export const geminiService = {
     }
 };
 
-async function fileToGenerativePart(file) {
-    return new Promise((resolve, reject) => {
+/**
+ * 이미지 파일을 최대 1024px로 축소한 base64로 변환
+ * (서버 요청 용량 제한 + Firestore 1MB 문서 한계 대비)
+ */
+const MAX_DIMENSION = 1024;
+
+async function fileToResizedBase64(file) {
+    const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64String = reader.result.split(',')[1];
-            resolve({
-                inlineData: {
-                    data: base64String,
-                    mimeType: file.type
-                },
-            });
-        };
+        reader.onloadend = () => resolve(reader.result);
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
+
+    const img = await new Promise((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = reject;
+        el.src = dataUrl;
+    });
+
+    let { width, height } = img;
+    if (width <= MAX_DIMENSION && height <= MAX_DIMENSION) {
+        // 축소 불필요 — 원본 그대로 전송
+        return { data: dataUrl.split(",")[1], mimeType: file.type };
+    }
+
+    const scale = MAX_DIMENSION / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+
+    const resizedUrl = canvas.toDataURL("image/jpeg", 0.85);
+    return { data: resizedUrl.split(",")[1], mimeType: "image/jpeg" };
 }

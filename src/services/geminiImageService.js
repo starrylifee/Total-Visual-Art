@@ -1,66 +1,37 @@
 /**
- * Gemini 2.5 Flash Image Generation Service
- * Uses the new @google/genai package for image generation
- * 
- * NOTE: This model generates images from text prompts using Gemini 2.5 Flash
+ * AI 이미지 생성 서비스 (클라이언트)
+ * 실제 생성은 서버(/api/ai)에서 수행 — API 키는 클라이언트에 존재하지 않는다.
  */
 
-import { GoogleGenAI } from "@google/genai";
-
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
-let genAI = null;
-
-function getGenAI() {
-    if (!genAI && apiKey) {
-        genAI = new GoogleGenAI({ apiKey });
-    }
-    return genAI;
-}
-
 /**
- * Generate an image from a text prompt using Gemini 2.5 Flash
+ * Generate an image from a text prompt
  * @param {string} prompt - The text description for the image
  * @returns {Promise<{success: boolean, imageDataUrl?: string, error?: string}>}
  */
 export async function generateImage(prompt) {
     try {
-        const ai = getGenAI();
-        if (!ai) {
-            return { success: false, error: 'Gemini API 키가 설정되지 않았습니다.' };
-        }
+        console.log("🎨 AI 이미지 생성 요청:", prompt);
 
-        console.log("🎨 Gemini 이미지 생성 시작:", prompt);
-
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash-exp-image-generation",
-            contents: prompt,
-            config: {
-                responseModalities: ["Text", "Image"]
-            }
+        const response = await fetch("/api/ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "image", prompt }),
         });
+        const data = await response.json().catch(() => ({}));
 
-        // Extract image from response
-        if (response.candidates && response.candidates[0]?.content?.parts) {
-            for (const part of response.candidates[0].content.parts) {
-                if (part.inlineData) {
-                    // Convert base64 to data URL for browser display
-                    const mimeType = part.inlineData.mimeType || 'image/png';
-                    const base64Data = part.inlineData.data;
-                    const imageDataUrl = `data:${mimeType};base64,${base64Data}`;
-
-                    console.log("✅ 이미지 생성 완료!");
-                    return { success: true, imageDataUrl };
-                }
-            }
+        if (!response.ok) {
+            return { success: false, error: data.error || `AI 서버 오류 (${response.status})` };
         }
-
-        return { success: false, error: '이미지 생성 응답에서 이미지를 찾을 수 없습니다.' };
+        if (data.success && data.imageDataUrl) {
+            console.log("✅ 이미지 생성 완료!");
+            return { success: true, imageDataUrl: data.imageDataUrl };
+        }
+        return { success: false, error: data.error || "이미지 생성에 실패했습니다." };
     } catch (error) {
-        console.error("❌ Gemini 이미지 생성 오류:", error);
+        console.error("❌ AI 이미지 생성 오류:", error);
         return {
             success: false,
-            error: error.message || '이미지 생성 중 오류가 발생했습니다.'
+            error: error.message || "이미지 생성 중 오류가 발생했습니다."
         };
     }
 }
@@ -68,10 +39,6 @@ export async function generateImage(prompt) {
 /**
  * Generate image and return the data URL directly (no Firebase Storage upload)
  * The data URL can be stored directly in Firestore (for small images)
- * @param {string} prompt 
- * @param {string} classId 
- * @param {string} sessionId 
- * @param {string} genId 
  */
 export async function generateAndUploadImage(prompt, classId, sessionId, genId) {
     const result = await generateImage(prompt);
@@ -80,10 +47,43 @@ export async function generateAndUploadImage(prompt, classId, sessionId, genId) 
         return result;
     }
 
-    // Return the data URL directly - no Firebase Storage needed
-    // Note: Data URLs can be stored in Firestore for small images
-    // For production, consider using Firebase Storage with proper CORS config
-    return { success: true, imageUrl: result.imageDataUrl };
+    // Firestore 문서 1MB 한계 대비 — 저장 전 압축 (1024px JPEG)
+    const compressed = await compressDataUrl(result.imageDataUrl);
+    return { success: true, imageUrl: compressed };
+}
+
+const MAX_DIMENSION = 1024;
+
+/**
+ * data URL 이미지를 최대 1024px JPEG로 압축
+ */
+async function compressDataUrl(dataUrl) {
+    try {
+        const img = await new Promise((resolve, reject) => {
+            const el = new Image();
+            el.onload = () => resolve(el);
+            el.onerror = reject;
+            el.src = dataUrl;
+        });
+
+        const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
+        const width = Math.round(img.width * scale);
+        const height = Math.round(img.height * scale);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        // PNG 투명 배경이 검게 변하지 않도록 흰 배경 깔기
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        return canvas.toDataURL("image/jpeg", 0.85);
+    } catch (error) {
+        console.warn("이미지 압축 실패 — 원본 사용:", error);
+        return dataUrl;
+    }
 }
 
 export default {

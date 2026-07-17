@@ -1,21 +1,20 @@
 /**
- * Ground API Service for Gamification
- * Uses the Ground API to award points to students
- * 
- * SECURITY NOTE: In production, this should be proxied through Firebase Cloud Functions
- * to hide the API key from client-side code.
+ * Ground API Service for Gamification (클라이언트)
+ * 실제 호출은 서버(/api/ground)에서 수행 — sk_live API 키는 클라이언트에 존재하지 않는다.
  */
 
-const GROUND_API_BASE = 'https://api.ground.dev/v1';
-
-/**
- * Get Ground API credentials from environment or teacher config
- */
-function getCredentials() {
-    return {
-        apiKey: import.meta.env.VITE_GROUND_API_KEY || '',
-        classId: import.meta.env.VITE_GROUND_CLASS_ID || ''
-    };
+async function callGround(payload) {
+    try {
+        const response = await fetch("/api/ground", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        return await response.json();
+    } catch (error) {
+        console.error("Ground API Error:", error);
+        return { success: false, error: error.message };
+    }
 }
 
 /**
@@ -23,72 +22,21 @@ function getCredentials() {
  * @param {string} studentIdentifier - Student email or ID in Ground system
  * @param {number} points - Number of points to award
  * @param {string} reason - Reason for awarding points
- * @returns {Promise<Object>} - Response from Ground API
  */
 export async function awardPoints(studentIdentifier, points, reason = 'Mission Completed') {
-    const { apiKey, classId } = getCredentials();
-
-    if (!apiKey || !classId) {
-        console.warn('Ground API credentials not configured');
-        return { success: false, error: 'API 키가 설정되지 않았습니다' };
-    }
-
-    try {
-        const response = await fetch(`${GROUND_API_BASE}/classes/${classId}/points`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                studentId: studentIdentifier,
-                points: points,
-                reason: reason,
-                timestamp: new Date().toISOString()
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Ground API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return { success: true, data };
-    } catch (error) {
-        console.error('Ground API Error:', error);
-        return { success: false, error: error.message };
-    }
+    return callGround({ action: "award", studentId: studentIdentifier, points, reason });
 }
 
 /**
  * Get student's current points
- * @param {string} studentIdentifier 
- * @returns {Promise<Object>}
+ * @param {string} studentIdentifier
  */
 export async function getStudentPoints(studentIdentifier) {
-    const { apiKey, classId } = getCredentials();
-
-    if (!apiKey || !classId) {
-        return { success: false, points: 0, error: 'API 키가 설정되지 않았습니다' };
+    const result = await callGround({ action: "points", studentId: studentIdentifier });
+    if (!result.success) {
+        return { success: false, points: 0, error: result.error };
     }
-
-    try {
-        const response = await fetch(`${GROUND_API_BASE}/classes/${classId}/students/${studentIdentifier}/points`, {
-            headers: {
-                'Authorization': `Bearer ${apiKey}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Ground API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        return { success: true, points: data.points || 0 };
-    } catch (error) {
-        console.error('Ground API Error:', error);
-        return { success: false, points: 0, error: error.message };
-    }
+    return result;
 }
 
 /**
@@ -105,8 +53,8 @@ export const ACHIEVEMENT_POINTS = {
 
 /**
  * Award points for a specific achievement type
- * @param {string} studentEmail 
- * @param {keyof ACHIEVEMENT_POINTS} achievementType 
+ * @param {string} studentEmail
+ * @param {keyof ACHIEVEMENT_POINTS} achievementType
  */
 export async function awardAchievement(studentEmail, achievementType) {
     const points = ACHIEVEMENT_POINTS[achievementType];

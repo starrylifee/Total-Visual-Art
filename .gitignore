@@ -25,3 +25,11 @@ npm-debug.log*
 # Cache
 .cache/
 .vite/
+.vercel
+.env*
+
+# Vercel
+.vercel/
+
+# Firebase deploy cache
+.firebase/
