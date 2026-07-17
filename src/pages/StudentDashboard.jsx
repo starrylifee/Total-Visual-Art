@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { classService } from '../services/classService';
 import { sessionService } from '../services/sessionService';
@@ -6,7 +7,23 @@ import { badgeService } from '../services/badgeService';
 import { generatePortfolioPDF } from '../services/pdfService';
 import { doc, getDoc, collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { Download } from 'lucide-react';
+import { Download, CheckCircle, AlertCircle, X } from 'lucide-react';
+
+// Toast Component
+const Toast = ({ message, type, onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 3000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+    const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#6366f1';
+    return (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: bgColor, color: 'white', padding: '1rem 1.5rem', borderRadius: '0.75rem', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem', zIndex: 9999 }}>
+            {type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+            <span style={{ fontWeight: '500' }}>{message}</span>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={16} /></button>
+        </div>
+    );
+};
 
 // Lazy load 3D Gallery for performance
 const Gallery3D = React.lazy(() => import('../components/Gallery3D'));
@@ -21,6 +38,12 @@ const StudentDashboard = () => {
     const [activeTab, setActiveTab] = useState('classes'); // 'classes' or 'gallery'
     const [myArtworks, setMyArtworks] = useState([]);
     const [selectedArtwork, setSelectedArtwork] = useState(null);
+    const [toast, setToast] = useState(null);
+    const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+    const [isLoadingArtworks, setIsLoadingArtworks] = useState(true);
+    const [isJoining, setIsJoining] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const showToast = (message, type = 'info') => setToast({ message, type });
 
     useEffect(() => {
         if (currentUser) {
@@ -30,6 +53,7 @@ const StudentDashboard = () => {
     }, [currentUser]);
 
     const fetchEnrolledClasses = async () => {
+        setIsLoadingClasses(true);
         try {
             const userRef = doc(db, 'users', currentUser.uid);
             const userSnap = await getDoc(userRef);
@@ -44,21 +68,32 @@ const StudentDashboard = () => {
                     const classes = await classService.getEnrolledClasses(userData.enrolledClasses);
                     setEnrolledClasses(classes);
 
-                    // Fetch active sessions for each class
-                    const sessionsMap = {};
-                    for (const cls of classes) {
-                        const sess = await sessionService.getActiveSessions(cls.id);
-                        sessionsMap[cls.id] = sess;
-                    }
-                    setActiveSessions(sessionsMap);
+                    const sessionEntries = await Promise.all(
+                        classes.map(async (cls) => [cls.id, await sessionService.getActiveSessions(cls.id)])
+                    );
+                    setActiveSessions(Object.fromEntries(sessionEntries));
+                } else {
+                    setEnrolledClasses([]);
+                    setActiveSessions({});
                 }
+            } else {
+                setBadges([]);
+                setEnrolledClasses([]);
+                setActiveSessions({});
             }
         } catch (e) {
             console.error("Error loading classes", e);
+            setBadges([]);
+            setEnrolledClasses([]);
+            setActiveSessions({});
+            showToast("학급 정보를 불러오지 못했습니다.", 'error');
+        } finally {
+            setIsLoadingClasses(false);
         }
     };
 
     const fetchMyArtworks = async () => {
+        setIsLoadingArtworks(true);
         try {
             // Query all published generations by this student
             const q = query(
@@ -74,35 +109,58 @@ const StudentDashboard = () => {
             setMyArtworks(artworks);
         } catch (e) {
             console.error("Error fetching artworks", e);
+            setMyArtworks([]);
+            showToast("갤러리 작품을 불러오지 못했습니다.", 'error');
+        } finally {
+            setIsLoadingArtworks(false);
         }
     };
 
     const handleExportPDF = async () => {
+        if (isExporting || myArtworks.length === 0) return;
+
+        setIsExporting(true);
         try {
             const fileName = await generatePortfolioPDF(
                 { displayName: currentUser?.displayName, email: currentUser?.email },
                 myArtworks,
                 badges
             );
-            alert(`📄 포트폴리오가 다운로드되었습니다: ${fileName}`);
+            showToast(`📄 포트폴리오 다운로드: ${fileName}`, 'success');
         } catch (e) {
             console.error("PDF 생성 오류:", e);
-            alert("PDF 생성 중 오류가 발생했습니다.");
+            showToast("PDF 생성 중 오류가 발생했습니다.", 'error');
+        } finally {
+            setIsExporting(false);
         }
     };
 
     const handleJoin = async () => {
+        const normalizedInviteCode = inviteCode.trim().toUpperCase();
+        if (!normalizedInviteCode) {
+            showToast("초대 코드를 입력해주세요.", 'error');
+            return;
+        }
+
+        setIsJoining(true);
         try {
-            const result = await classService.joinClassRequest(currentUser.uid, inviteCode.trim().toUpperCase());
+            const result = await classService.joinClassRequest(currentUser.uid, normalizedInviteCode);
             setMessage(`✅ ${result.className} 학급에 가입 신청했어요! 선생님의 승인을 기다려주세요.`);
             setInviteCode('');
+            showToast("가입 신청을 보냈습니다.", 'success');
         } catch (e) {
             setMessage(`❌ 오류: ${e.message}`);
+            showToast(e.message || "가입 신청에 실패했습니다.", 'error');
+        } finally {
+            setIsJoining(false);
         }
     };
 
     return (
         <div className="dashboard-container" style={{ padding: '1rem' }}>
+            {/* Toast */}
+            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
             {/* Header with Badges */}
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
@@ -195,6 +253,7 @@ const StudentDashboard = () => {
                             />
                             <button
                                 onClick={handleJoin}
+                                disabled={isJoining || !inviteCode.trim()}
                                 style={{
                                     padding: '0.75rem 1.5rem',
                                     background: 'var(--primary)',
@@ -202,11 +261,12 @@ const StudentDashboard = () => {
                                     border: 'none',
                                     borderRadius: '0.5rem',
                                     fontWeight: '600',
-                                    cursor: 'pointer',
-                                    fontSize: '1rem'
+                                    cursor: isJoining || !inviteCode.trim() ? 'not-allowed' : 'pointer',
+                                    fontSize: '1rem',
+                                    opacity: isJoining || !inviteCode.trim() ? 0.6 : 1
                                 }}
                             >
-                                가입 신청
+                                {isJoining ? '신청 중...' : '가입 신청'}
                             </button>
                         </div>
                         {message && <p style={{ marginTop: '1rem', fontWeight: '500', color: message.includes('오류') ? '#ef4444' : 'var(--accent)' }}>{message}</p>}
@@ -215,7 +275,11 @@ const StudentDashboard = () => {
                     {/* My Classes */}
                     <div>
                         <h2 style={{ color: 'var(--text-main)' }}>🏫 내가 들어간 학급</h2>
-                        {enrolledClasses.length === 0 ? (
+                        {isLoadingClasses ? (
+                            <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--card-bg)', borderRadius: '1rem', boxShadow: 'var(--shadow)' }}>
+                                <p style={{ color: 'var(--text-sub)' }}>학급 정보를 불러오는 중...</p>
+                            </div>
+                        ) : enrolledClasses.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--card-bg)', borderRadius: '1rem', boxShadow: 'var(--shadow)' }}>
                                 <p style={{ fontSize: '3rem', margin: 0 }}>📭</p>
                                 <p style={{ color: 'var(--text-sub)' }}>아직 들어간 학급이 없어요.<br />위에서 초대 코드로 가입해보세요!</p>
@@ -237,9 +301,9 @@ const StudentDashboard = () => {
                                             {activeSessions[cls.id]?.length > 0 ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                     {activeSessions[cls.id].map(sess => (
-                                                        <a
+                                                        <Link
                                                             key={sess.id}
-                                                            href={`/class/${cls.id}/session/${sess.id}`}
+                                                            to={`/class/${cls.id}/session/${sess.id}`}
                                                             style={{
                                                                 display: 'flex',
                                                                 alignItems: 'center',
@@ -254,7 +318,7 @@ const StudentDashboard = () => {
                                                             }}
                                                         >
                                                             🚀 {sess.title} 참여하기
-                                                        </a>
+                                                        </Link>
                                                     ))}
                                                 </div>
                                             ) : (
@@ -277,6 +341,7 @@ const StudentDashboard = () => {
                         {myArtworks.length > 0 && (
                             <button
                                 onClick={handleExportPDF}
+                                disabled={isExporting}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -286,18 +351,23 @@ const StudentDashboard = () => {
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '2rem',
-                                    cursor: 'pointer',
+                                    cursor: isExporting ? 'not-allowed' : 'pointer',
                                     fontWeight: '600',
-                                    boxShadow: 'var(--shadow)'
+                                    boxShadow: 'var(--shadow)',
+                                    opacity: isExporting ? 0.7 : 1
                                 }}
                             >
                                 <Download size={18} />
-                                📄 포트폴리오 PDF 다운로드
+                                {isExporting ? 'PDF 생성 중...' : '📄 포트폴리오 PDF 다운로드'}
                             </button>
                         )}
                     </div>
 
-                    {myArtworks.length === 0 ? (
+                    {isLoadingArtworks ? (
+                        <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--card-bg)', borderRadius: '1rem', boxShadow: 'var(--shadow)' }}>
+                            <p style={{ color: 'var(--text-sub)' }}>갤러리를 불러오는 중...</p>
+                        </div>
+                    ) : myArtworks.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '3rem', background: 'var(--card-bg)', borderRadius: '1rem', boxShadow: 'var(--shadow)' }}>
                             <p style={{ fontSize: '3rem', margin: 0 }}>🎨</p>
                             <p style={{ color: 'var(--text-sub)' }}>아직 완성된 작품이 없어요.<br />수업에 참여해서 첫 작품을 만들어보세요!</p>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, themes } from '../context/ThemeContext';
 import { classService } from '../services/classService';
@@ -50,6 +51,11 @@ const TeacherDashboard = () => {
         title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '',
         features: { vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true }
     });
+    const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+    const [isLoadingClassDetail, setIsLoadingClassDetail] = useState(false);
+    const [isCreatingClass, setIsCreatingClass] = useState(false);
+    const [isCreatingSession, setIsCreatingSession] = useState(false);
+    const [approvingStudentId, setApprovingStudentId] = useState(null);
 
     // Badge State
     const [activeTab, setActiveTab] = useState('classes');
@@ -72,55 +78,117 @@ const TeacherDashboard = () => {
     }, [currentUser]);
 
     const fetchClasses = async () => {
+        setIsLoadingClasses(true);
         if (currentUser) {
-            const data = await classService.getTeacherClasses(currentUser.uid);
-            setClasses(data);
+            try {
+                const data = await classService.getTeacherClasses(currentUser.uid);
+                setClasses(data);
+            } catch (error) {
+                console.error('Failed to fetch classes:', error);
+                showToast("학급 정보를 불러오지 못했습니다.", "error");
+            } finally {
+                setIsLoadingClasses(false);
+            }
+        } else {
+            setClasses([]);
+            setIsLoadingClasses(false);
         }
     };
 
     const handleCreateClass = async () => {
-        if (!newClassName) return;
+        if (!newClassName.trim() || isCreatingClass) return;
+        setIsCreatingClass(true);
         try {
-            await classService.createClass(currentUser.uid, newClassName);
+            await classService.createClass(currentUser.uid, newClassName.trim());
             setShowCreateModal(false);
             setNewClassName('');
-            fetchClasses();
+            await fetchClasses();
             showToast("✅ 학급이 생성되었습니다!", "success");
         } catch (error) {
             showToast("학급 생성 실패", "error");
+        } finally {
+            setIsCreatingClass(false);
         }
     };
 
     const handleSelectClass = async (cls) => {
+        setIsLoadingClassDetail(true);
         setSelectedClass(cls);
-        if (cls.pendingStudents && cls.pendingStudents.length > 0) {
-            const students = await classService.getPendingStudents(cls.pendingStudents);
-            setPendingStudents(students);
-        } else {
+        try {
+            if (cls.pendingStudents && cls.pendingStudents.length > 0) {
+                const students = await classService.getPendingStudents(cls.pendingStudents);
+                setPendingStudents(students);
+            } else {
+                setPendingStudents([]);
+            }
+            const classSessions = await sessionService.getClassSessions(cls.id);
+            setSessions(classSessions);
+        } catch (error) {
+            console.error('Failed to load class detail:', error);
             setPendingStudents([]);
+            setSessions([]);
+            showToast("학급 상세 정보를 불러오지 못했습니다.", "error");
+        } finally {
+            setIsLoadingClassDetail(false);
         }
-        const classSessions = await sessionService.getClassSessions(cls.id);
-        setSessions(classSessions);
     };
 
     const handleApprove = async (studentId) => {
-        if (!selectedClass) return;
-        await classService.approveStudent(selectedClass.id, studentId);
-        const updatedClasses = await classService.getTeacherClasses(currentUser.uid);
-        const updatedSelected = updatedClasses.find(c => c.id === selectedClass.id);
-        setClasses(updatedClasses);
-        handleSelectClass(updatedSelected);
-        showToast("✅ 학생 승인됨!", "success");
+        if (!selectedClass || approvingStudentId) return;
+
+        setApprovingStudentId(studentId);
+        try {
+            await classService.approveStudent(selectedClass.id, studentId);
+            const updatedClasses = await classService.getTeacherClasses(currentUser.uid);
+            const updatedSelected = updatedClasses.find(c => c.id === selectedClass.id);
+            setClasses(updatedClasses);
+            if (updatedSelected) {
+                await handleSelectClass(updatedSelected);
+            }
+            showToast("✅ 학생 승인됨!", "success");
+        } catch (error) {
+            console.error('Failed to approve student:', error);
+            showToast("학생 승인에 실패했습니다.", "error");
+        } finally {
+            setApprovingStudentId(null);
+        }
     };
 
     const handleCreateSession = async () => {
-        if (!selectedClass || !newSessionData.title) return;
-        await sessionService.createSession(selectedClass.id, newSessionData);
-        setShowSessionModal(false);
-        setNewSessionData({ title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '', features: { vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true } });
-        const classSessions = await sessionService.getClassSessions(selectedClass.id);
-        setSessions(classSessions);
-        showToast("✅ 활동이 생성되었습니다!", "success");
+        if (!selectedClass || !newSessionData.title.trim() || isCreatingSession) return;
+
+        setIsCreatingSession(true);
+        try {
+            await sessionService.createSession(selectedClass.id, {
+                ...newSessionData,
+                title: newSessionData.title.trim()
+            });
+            setShowSessionModal(false);
+            setNewSessionData({ title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '', features: { vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true } });
+            const classSessions = await sessionService.getClassSessions(selectedClass.id);
+            setSessions(classSessions);
+            showToast("✅ 활동이 생성되었습니다!", "success");
+        } catch (error) {
+            console.error('Failed to create session:', error);
+            showToast("활동 생성에 실패했습니다.", "error");
+        } finally {
+            setIsCreatingSession(false);
+        }
+    };
+
+    const handleToggleSessionStatus = async (sessionId, currentStatus) => {
+        if (!selectedClass) return;
+
+        const nextStatus = currentStatus === 'archived' ? 'active' : 'archived';
+
+        try {
+            await sessionService.updateSessionStatus(selectedClass.id, sessionId, nextStatus);
+            const classSessions = await sessionService.getClassSessions(selectedClass.id);
+            setSessions(classSessions);
+            showToast(nextStatus === 'archived' ? "활동을 보관했습니다." : "활동을 다시 활성화했습니다.", "success");
+        } catch (error) {
+            showToast("활동 상태 변경에 실패했습니다.", "error");
+        }
     };
 
     const handleLoadBadges = async () => {
@@ -230,7 +298,7 @@ const TeacherDashboard = () => {
                         />
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                             <button onClick={() => setShowCreateModal(false)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #ddd', background: 'white', cursor: 'pointer' }}>취소</button>
-                            <button onClick={handleCreateClass} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer' }}>만들기</button>
+                            <button onClick={handleCreateClass} disabled={isCreatingClass || !newClassName.trim()} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: 'var(--primary)', color: 'white', cursor: isCreatingClass || !newClassName.trim() ? 'not-allowed' : 'pointer', opacity: isCreatingClass || !newClassName.trim() ? 0.6 : 1 }}> {isCreatingClass ? '생성 중...' : '만들기'}</button>
                         </div>
                     </div>
                 </div>
@@ -284,7 +352,7 @@ const TeacherDashboard = () => {
 
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                             <button onClick={() => setShowSessionModal(false)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #ddd', background: 'white', cursor: 'pointer' }}>취소</button>
-                            <button onClick={handleCreateSession} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer' }}>만들기</button>
+                            <button onClick={handleCreateSession} disabled={isCreatingSession || !newSessionData.title.trim()} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: 'var(--primary)', color: 'white', cursor: isCreatingSession || !newSessionData.title.trim() ? 'not-allowed' : 'pointer', opacity: isCreatingSession || !newSessionData.title.trim() ? 0.6 : 1 }}>{isCreatingSession ? '생성 중...' : '만들기'}</button>
                         </div>
                     </div>
                 </div>
@@ -295,7 +363,7 @@ const TeacherDashboard = () => {
                 <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
                     <div style={{ flex: '1 1 300px', minWidth: '280px' }}>
                         <h2 style={{ marginBottom: '1rem', color: 'var(--text-main)' }}>📚 내 학급</h2>
-                        {classes.length === 0 ? <p style={{ color: 'var(--text-sub)' }}>아직 학급이 없습니다. 새 학급을 만들어보세요!</p> : (
+                        {isLoadingClasses ? <p style={{ color: 'var(--text-sub)' }}>학급을 불러오는 중...</p> : classes.length === 0 ? <p style={{ color: 'var(--text-sub)' }}>아직 학급이 없습니다. 새 학급을 만들어보세요!</p> : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 {classes.map(cls => (
                                     <div key={cls.id} onClick={() => handleSelectClass(cls)} style={{
@@ -322,6 +390,10 @@ const TeacherDashboard = () => {
                             <>
                                 <h2 style={{ color: 'var(--text-main)', marginBottom: '1.5rem' }}>{selectedClass.name} 관리</h2>
 
+                                {isLoadingClassDetail ? (
+                                    <p style={{ color: 'var(--text-sub)' }}>학급 상세 정보를 불러오는 중...</p>
+                                ) : (
+                                <>
                                 <div style={{ marginBottom: '2rem' }}>
                                     <h3 style={{ color: 'var(--text-main)' }}>⏳ 승인 대기</h3>
                                     {pendingStudents.length === 0 ? <p style={{ color: 'var(--text-sub)' }}>대기 중인 학생이 없습니다.</p> : (
@@ -329,7 +401,7 @@ const TeacherDashboard = () => {
                                             {pendingStudents.map(s => (
                                                 <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#fff9f0', borderRadius: '0.5rem' }}>
                                                     <span>{s.displayName || s.email}</span>
-                                                    <button onClick={() => handleApprove(s.id)} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: '500' }}>승인</button>
+                                                    <button onClick={() => handleApprove(s.id)} disabled={approvingStudentId === s.id} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: 'none', background: 'var(--accent)', color: 'white', cursor: approvingStudentId === s.id ? 'not-allowed' : 'pointer', fontWeight: '500', opacity: approvingStudentId === s.id ? 0.6 : 1 }}>{approvingStudentId === s.id ? '승인 중...' : '승인'}</button>
                                                 </div>
                                             ))}
                                         </div>
@@ -341,22 +413,34 @@ const TeacherDashboard = () => {
                                         <h3 style={{ color: 'var(--text-main)', margin: 0 }}>📝 활동 목록</h3>
                                         <button onClick={() => setShowSessionModal(true)} style={{ padding: '0.5rem 1rem', borderRadius: '2rem', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontWeight: '500' }}>+ 새 활동</button>
                                     </div>
+                                    <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: 'var(--text-sub)' }}>보관된 활동은 학생 목록과 세션 접근에서 숨겨집니다.</p>
                                     {sessions.length === 0 ? <p style={{ color: 'var(--text-sub)' }}>아직 활동이 없습니다.</p> : (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                             {sessions.map(sess => (
-                                                <div key={sess.id} style={{ padding: '1rem', background: '#f8f8f8', borderRadius: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div key={sess.id} style={{ padding: '1rem', background: '#f8f8f8', borderRadius: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                                                     <div>
                                                         <strong>{sess.title}</strong>
                                                         <p style={{ margin: '0.25rem 0', fontSize: '0.8rem', color: 'var(--text-sub)' }}>
                                                             {sess.createdAt?.toDate().toLocaleDateString()}
                                                         </p>
+                                                        <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: '600', color: sess.status === 'archived' ? '#b45309' : '#059669' }}>
+                                                            {sess.status === 'archived' ? '보관됨' : '활성'}
+                                                        </p>
+                                                        <button
+                                                            onClick={() => handleToggleSessionStatus(sess.id, sess.status)}
+                                                            style={{ marginTop: '0.5rem', padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #d1d5db', background: 'white', color: 'var(--text-main)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '500' }}
+                                                        >
+                                                            {sess.status === 'archived' ? '다시 열기' : '보관'}
+                                                        </button>
                                                     </div>
-                                                    <a href={`/class/${selectedClass.id}/session/${sess.id}`} style={{ padding: '0.5rem 1rem', borderRadius: '1rem', background: 'var(--primary)', color: 'white', textDecoration: 'none', fontWeight: '500' }}>입장</a>
+                                                    <Link to={`/class/${selectedClass.id}/session/${sess.id}`} style={{ padding: '0.5rem 1rem', borderRadius: '1rem', background: 'var(--primary)', color: 'white', textDecoration: 'none', fontWeight: '500' }}>입장</Link>
                                                 </div>
                                             ))}
                                         </div>
                                     )}
                                 </div>
+                                </>
+                                )}
                             </>
                         ) : (
                             <p style={{ color: 'var(--text-sub)', textAlign: 'center', padding: '3rem' }}>👈 학급을 선택해주세요</p>

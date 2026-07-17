@@ -1,0 +1,116 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function currentUserExists() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isTeacher() {
+      return currentUserExists() && currentUserDoc().data.role == 'teacher';
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function classDoc(classId) {
+      return get(/databases/$(database)/documents/classes/$(classId));
+    }
+
+    function classExists(classId) {
+      return exists(/databases/$(database)/documents/classes/$(classId));
+    }
+
+    function isClassTeacher(classId) {
+      return signedIn() && classExists(classId) && classDoc(classId).data.teacherId == request.auth.uid;
+    }
+
+    function isClassStudent(classId) {
+      return signedIn() && classExists(classId) && request.auth.uid in classDoc(classId).data.students;
+    }
+
+    function isClassPendingStudent(classId) {
+      return signedIn() && classExists(classId) && request.auth.uid in classDoc(classId).data.pendingStudents;
+    }
+
+    function isClassMember(classId) {
+      return isClassTeacher(classId) || isClassStudent(classId) || isClassPendingStudent(classId);
+    }
+
+    match /users/{userId} {
+      allow read: if isSelf(userId) || isTeacher();
+      allow create: if isSelf(userId);
+      allow update: if isSelf(userId) || isTeacher();
+      allow delete: if false;
+
+      match /badges/{badgeId} {
+        allow read: if isSelf(userId) || isTeacher();
+        allow create, update, delete: if isTeacher();
+      }
+    }
+
+    match /classes/{classId} {
+      // Invite-code lookup currently happens on the client, so authenticated users need read access.
+      allow read: if signedIn();
+      allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid;
+      allow delete: if false;
+
+      allow update: if isClassTeacher(classId)
+        || (
+          signedIn()
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['pendingStudents'])
+          && !(request.auth.uid in resource.data.students)
+          && !(request.auth.uid in resource.data.pendingStudents)
+          && request.resource.data.pendingStudents.size() == resource.data.pendingStudents.size() + 1
+          && request.resource.data.pendingStudents.hasAll(resource.data.pendingStudents)
+          && request.resource.data.pendingStudents.hasAny([request.auth.uid])
+        );
+
+      match /badges/{badgeId} {
+        allow read: if isClassMember(classId);
+        allow create, update, delete: if isClassTeacher(classId);
+      }
+
+      match /sessions/{sessionId} {
+        allow read: if isClassTeacher(classId)
+          || (
+            isClassStudent(classId)
+            && resource.data.isActive != false
+            && resource.data.status != 'archived'
+          );
+        allow create, update, delete: if isClassTeacher(classId);
+
+        match /generationQueue/{genId} {
+          allow read: if isClassTeacher(classId)
+            || (
+              isClassStudent(classId)
+              && resource.data.studentId == request.auth.uid
+            );
+          allow create: if isClassStudent(classId)
+            && request.resource.data.studentId == request.auth.uid;
+          allow update, delete: if isClassTeacher(classId);
+        }
+
+        match /appreciations/{appreciationId} {
+          allow read: if isClassTeacher(classId)
+            || (
+              isClassStudent(classId)
+              && resource.data.studentId == request.auth.uid
+            );
+          allow create: if isClassStudent(classId)
+            && request.resource.data.studentId == request.auth.uid;
+          allow update, delete: if false;
+        }
+      }
+    }
+  }
+}

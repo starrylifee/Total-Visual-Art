@@ -8,7 +8,8 @@ import {
     updateDoc,
     arrayUnion,
     serverTimestamp,
-    getDoc
+    getDoc,
+    runTransaction
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -62,12 +63,14 @@ export const classService = {
 
             const classDoc = querySnapshot.docs[0];
             const classData = classDoc.data();
+            const students = Array.isArray(classData.students) ? classData.students : [];
+            const pendingStudents = Array.isArray(classData.pendingStudents) ? classData.pendingStudents : [];
 
             // Check if already joined or pending
-            if (classData.students.includes(studentId)) {
+            if (students.includes(studentId)) {
                 throw new Error("Already a member of this class");
             }
-            if (classData.pendingStudents.includes(studentId)) {
+            if (pendingStudents.includes(studentId)) {
                 throw new Error("Join request already pending");
             }
 
@@ -87,21 +90,35 @@ export const classService = {
     approveStudent: async (classId, studentId) => {
         try {
             const classRef = doc(db, "classes", classId);
-            const classSnap = await getDoc(classRef);
-            const classData = classSnap.data();
-
-            const newPending = classData.pendingStudents.filter(id => id !== studentId);
-            const newStudents = [...classData.students, studentId];
-
-            await updateDoc(classRef, {
-                pendingStudents: newPending,
-                students: newStudents
-            });
-
-            // Update User profile with enrolledClassId (Optional, for easy access)
             const userRef = doc(db, "users", studentId);
-            await updateDoc(userRef, {
-                enrolledClasses: arrayUnion(classId)
+
+            await runTransaction(db, async (transaction) => {
+                const classSnap = await transaction.get(classRef);
+                const userSnap = await transaction.get(userRef);
+
+                if (!classSnap.exists()) {
+                    throw new Error("Class not found");
+                }
+
+                const classData = classSnap.data();
+                const pendingStudents = Array.isArray(classData.pendingStudents) ? classData.pendingStudents : [];
+                const students = Array.isArray(classData.students) ? classData.students : [];
+                const enrolledClasses = userSnap.exists() && Array.isArray(userSnap.data().enrolledClasses)
+                    ? userSnap.data().enrolledClasses
+                    : [];
+
+                transaction.update(classRef, {
+                    pendingStudents: pendingStudents.filter(id => id !== studentId),
+                    students: students.includes(studentId) ? students : [...students, studentId]
+                });
+
+                if (userSnap.exists()) {
+                    transaction.update(userRef, {
+                        enrolledClasses: enrolledClasses.includes(classId) ? enrolledClasses : [...enrolledClasses, classId]
+                    });
+                } else {
+                    transaction.set(userRef, { enrolledClasses: [classId] }, { merge: true });
+                }
             });
 
             return true;
