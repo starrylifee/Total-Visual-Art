@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import SessionWorkspace from './pages/SessionWorkspace';
+import StudentJoin from './pages/StudentJoin';
+import StudentSession from './pages/StudentSession';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { db } from './services/firebase';
@@ -105,6 +107,8 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/join" element={<StudentJoin />} />
+              <Route path="/student/session" element={<StudentSession />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <DashboardRedirect />

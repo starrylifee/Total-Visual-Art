@@ -9,7 +9,8 @@ import {
     arrayUnion,
     serverTimestamp,
     getDoc,
-    runTransaction
+    runTransaction,
+    deleteDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -141,6 +142,20 @@ export const classService = {
             if (u.exists()) students.push({ id: u.id, ...u.data() });
         }
         return students;
+    },
+
+    // TEACHER: 비밀번호를 등록한 학생 번호 목록 (활동코드 접속 체계)
+    getRegisteredStudents: async (classId) => {
+        const snapshot = await getDocs(collection(db, "classes", classId, "students"));
+        return snapshot.docs
+            .map(d => ({ no: Number(d.id), ...d.data() }))
+            .filter(s => Number.isInteger(s.no))
+            .sort((a, b) => a.no - b.no);
+    },
+
+    // TEACHER: 학생 비밀번호 초기화 (문서 삭제 -> 다음 입장 때 새로 설정)
+    resetStudentPassword: async (classId, studentNo) => {
+        await deleteDoc(doc(db, "classes", classId, "students", String(studentNo)));
     },
 
     // STUDENT: Get enrolled classes

@@ -66,6 +66,10 @@ const TeacherDashboard = () => {
     const [classArtworks, setClassArtworks] = useState([]);
     const [slideshowSession, setSlideshowSession] = useState(null);
 
+    // 학생 비밀번호 관리 (활동코드 접속 체계)
+    const [registeredStudents, setRegisteredStudents] = useState([]);
+    const [showPasswordPanel, setShowPasswordPanel] = useState(false);
+
     // Toast State
     const [toast, setToast] = useState(null);
     const showToast = (msg, type = 'info') => {
@@ -114,6 +118,8 @@ const TeacherDashboard = () => {
     const handleSelectClass = async (cls) => {
         setIsLoadingClassDetail(true);
         setSelectedClass(cls);
+        setShowPasswordPanel(false);
+        setRegisteredStudents([]);
         try {
             if (cls.pendingStudents && cls.pendingStudents.length > 0) {
                 const students = await classService.getPendingStudents(cls.pendingStudents);
@@ -161,7 +167,8 @@ const TeacherDashboard = () => {
         try {
             await sessionService.createSession(selectedClass.id, {
                 ...newSessionData,
-                title: newSessionData.title.trim()
+                title: newSessionData.title.trim(),
+                teacherId: currentUser.uid
             });
             setShowSessionModal(false);
             setNewSessionData({ title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '', features: { vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true } });
@@ -173,6 +180,45 @@ const TeacherDashboard = () => {
             showToast("활동 생성에 실패했습니다.", "error");
         } finally {
             setIsCreatingSession(false);
+        }
+    };
+
+    // 활동코드가 없는 기존 세션에 코드 발급
+    const handleAssignJoinCode = async (sessionId) => {
+        if (!selectedClass) return;
+        try {
+            const code = await sessionService.assignJoinCode(selectedClass.id, sessionId, currentUser.uid);
+            const classSessions = await sessionService.getClassSessions(selectedClass.id);
+            setSessions(classSessions);
+            showToast(`✅ 활동코드 발급: ${code}`, "success");
+        } catch (error) {
+            console.error('Failed to assign join code:', error);
+            showToast("활동코드 발급에 실패했습니다.", "error");
+        }
+    };
+
+    const handleLoadRegisteredStudents = async () => {
+        if (!selectedClass) return;
+        try {
+            const students = await classService.getRegisteredStudents(selectedClass.id);
+            setRegisteredStudents(students);
+            setShowPasswordPanel(true);
+        } catch (error) {
+            console.error('Failed to load registered students:', error);
+            showToast("학생 목록을 불러오지 못했습니다.", "error");
+        }
+    };
+
+    const handleResetPassword = async (studentNo) => {
+        if (!selectedClass) return;
+        if (!window.confirm(`${studentNo}번 학생의 비밀번호를 초기화할까요?\n학생이 다음 입장 때 새 비밀번호를 만들게 됩니다.`)) return;
+        try {
+            await classService.resetStudentPassword(selectedClass.id, studentNo);
+            await handleLoadRegisteredStudents();
+            showToast(`🔑 ${studentNo}번 비밀번호 초기화 완료`, "success");
+        } catch (error) {
+            console.error('Failed to reset password:', error);
+            showToast("비밀번호 초기화에 실패했습니다.", "error");
         }
     };
 
@@ -408,6 +454,36 @@ const TeacherDashboard = () => {
                                     )}
                                 </div>
 
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                                        <h3 style={{ color: 'var(--text-main)', margin: 0 }}>🔑 학생 비밀번호 관리</h3>
+                                        <button onClick={handleLoadRegisteredStudents} style={{ padding: '0.35rem 0.85rem', borderRadius: '999px', border: '1px solid var(--primary)', background: 'white', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600' }}>
+                                            {showPasswordPanel ? '새로고침' : '목록 보기'}
+                                        </button>
+                                    </div>
+                                    <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: 'var(--text-sub)' }}>
+                                        학생은 활동코드 + 출석번호 + 비밀번호(4자리)로 입장합니다. 비밀번호를 잊은 학생은 여기서 초기화해주세요.
+                                    </p>
+                                    {showPasswordPanel && (
+                                        registeredStudents.length === 0 ? (
+                                            <p style={{ color: 'var(--text-sub)', fontSize: '0.9rem' }}>아직 비밀번호를 만든 학생이 없습니다.</p>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                {registeredStudents.map(s => (
+                                                    <button
+                                                        key={s.no}
+                                                        onClick={() => handleResetPassword(s.no)}
+                                                        title="클릭하면 비밀번호 초기화"
+                                                        style={{ padding: '0.5rem 0.85rem', borderRadius: '0.6rem', border: '1px solid #ddd', background: '#f8f8f8', cursor: 'pointer', fontWeight: '600' }}
+                                                    >
+                                                        {s.no}번 ✕
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )
+                                    )}
+                                </div>
+
                                 <div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                         <h3 style={{ color: 'var(--text-main)', margin: 0 }}>📝 활동 목록</h3>
@@ -423,6 +499,16 @@ const TeacherDashboard = () => {
                                                         <p style={{ margin: '0.25rem 0', fontSize: '0.8rem', color: 'var(--text-sub)' }}>
                                                             {sess.createdAt?.toDate().toLocaleDateString()}
                                                         </p>
+                                                        {sess.joinCode ? (
+                                                            <p style={{ margin: '0.25rem 0', fontSize: '0.95rem' }}>
+                                                                🔑 활동코드: <strong style={{ color: 'var(--primary)', letterSpacing: '0.15em', fontSize: '1.1rem' }}>{sess.joinCode}</strong>
+                                                            </p>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleAssignJoinCode(sess.id)}
+                                                                style={{ margin: '0.25rem 0', padding: '0.3rem 0.7rem', borderRadius: '999px', border: '1px solid var(--primary)', background: 'white', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
+                                                            >🔑 활동코드 발급</button>
+                                                        )}
                                                         <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: '600', color: sess.status === 'archived' ? '#b45309' : '#059669' }}>
                                                             {sess.status === 'archived' ? '보관됨' : '활성'}
                                                         </p>

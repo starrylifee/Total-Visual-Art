@@ -7,11 +7,39 @@ import {
     serverTimestamp,
     orderBy,
     doc,
-    updateDoc
+    updateDoc,
+    runTransaction
 } from 'firebase/firestore';
 import { db } from './firebase';
 
+// 혼동되는 글자(0/O, 1/I) 제외한 6자리 활동코드
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const generateJoinCode = () =>
+    Array.from({ length: 6 }, () => CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]).join('');
+
+// joinCodes/{code} 매핑을 충돌 없이 만들고 세션 문서에 코드를 기록
+const assignJoinCode = async (classId, sessionId, teacherId) => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const code = generateJoinCode();
+        const codeRef = doc(db, 'joinCodes', code);
+        try {
+            await runTransaction(db, async (tx) => {
+                const snap = await tx.get(codeRef);
+                if (snap.exists()) throw new Error('CODE_TAKEN');
+                tx.set(codeRef, { classId, sessionId, teacherId, createdAt: serverTimestamp() });
+                tx.update(doc(db, 'classes', classId, 'sessions', sessionId), { joinCode: code });
+            });
+            return code;
+        } catch (e) {
+            if (e.message !== 'CODE_TAKEN') throw e;
+        }
+    }
+    throw new Error('활동코드 발급에 실패했습니다. 다시 시도해주세요.');
+};
+
 export const sessionService = {
+    assignJoinCode,
+
     // TEACHER: Create a new session in a class
     createSession: async (classId, sessionData) => {
         try {
@@ -32,6 +60,14 @@ export const sessionService = {
                 createdAt: serverTimestamp(),
                 isActive: status !== "archived"
             });
+            // 학생 입장용 활동코드 발급 (실패해도 세션 생성은 유지 — 대시보드에서 재발급 가능)
+            if (sessionData.teacherId) {
+                try {
+                    await assignJoinCode(classId, sessionRef.id, sessionData.teacherId);
+                } catch (e) {
+                    console.error("활동코드 발급 실패:", e);
+                }
+            }
             return sessionRef.id;
         } catch (error) {
             console.error("Error creating session:", error);
