@@ -121,9 +121,11 @@ classes/{classId}                   # teacherId, 학급명
 - 1주차 ①② 완료: Vercel 전환(https://total-visual-art.vercel.app, GitHub 푸시 자동 배포) + AI 키 서버리스 이전(`api/ai.js`, `api/ground.js`). 배포 번들 키 노출 없음 검증, 텍스트·이미지 생성 실제 테스트 통과. 커밋 2개 푸시 완료
 - 삽질 기록: Vercel 환경변수를 PowerShell 파이프로 넣으면 BOM(U+FEFF)이 앞에 붙어 500 에러 발생 → cmd 리다이렉트로 재등록 + 서버 코드에 BOM 제거 방어 로직
 - **다음 작업**: 학생 접속 체계 (활동코드 + 출석번호 + 비밀번호) — 1주차 3번째 항목부터
-- **사용자 결정 대기**:
-  - [ ] 옛 Firebase Hosting 사이트(total-visual-art.web.app) 끄기 여부 — 옛 버전에 API 키 노출된 채 살아있음
-  - [ ] Gemini API 키 재발급 여부 (이미 공개된 적 있는 키) — 재발급 시 .env와 Vercel 환경변수 교체 필요
+- **사용자 결정 대기**: 없음
+
+### 2026-07-18
+- 사용자 결정: Gemini API 키는 그대로 유지, Firebase Hosting은 끄기
+- `firebase hosting:disable` 실행 → total-visual-art.web.app 접속 시 Site Not Found(404) 확인. API 키 노출된 옛 버전 완전 차단
 
 ## 6. 비용·제약 메모
 
