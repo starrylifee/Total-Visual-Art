@@ -77,8 +77,8 @@ classes/{classId}                   # teacherId, 학급명
 ### 1주차 — 뼈대 공사
 - [x] Vercel 배포 전환 (vercel.json, GitHub 자동 배포 연결, Firebase Hosting 설정 제거) — https://total-visual-art.vercel.app
 - [x] AI 호출 서버리스 이전: `api/ai.js`(Gemini) + `api/ground.js`(그라운드) 생성, 클라이언트에서 API 키 완전 제거, 배포 번들 키 노출 없음 검증 완료. 모델도 최신화(gemini-2.5-flash / 2.5-flash-image). 작품 사진 전송·생성 이미지 저장 시 1024px 압축 적용
-- [ ] 학생 접속 체계 교체: 활동코드 + 출석번호 + 비밀번호(최초 설정/재입장 확인/교사 초기화)
-- [ ] 학생용 세션 토큰 검증 구조 (서버리스에서 확인)
+- [x] 학생 접속 체계 교체: 활동코드 + 출석번호 + 비밀번호(최초 설정/재입장 확인/교사 초기화) — `/join` 입장 UI + `api/student.js`(lookup/join/me) + 교사 대시보드 코드 발급·비밀번호 초기화
+- [x] 학생용 세션 토큰 검증 구조 (서버리스에서 확인) — HMAC 서명 토큰 10시간, `verifyStudentToken` 헬퍼(`api/_lib.js`)를 이후 데이터 API가 공용 사용
 - [ ] Firestore 규칙 재작성 (교사 직접 접근 + 학생은 API 경유만)
 - [ ] 교사 대시보드 개편: 활동 생성 시 모듈 선택 UI + 활동코드 표시
 - [ ] 기존 기능(감상 루프·승인 큐·챗봇) 새 접속 체계에서 동작 확인
@@ -126,6 +126,14 @@ classes/{classId}                   # teacherId, 학급명
 ### 2026-07-18
 - 사용자 결정: Gemini API 키는 그대로 유지, Firebase Hosting은 끄기
 - `firebase hosting:disable` 실행 → total-visual-art.web.app 접속 시 Site Not Found(404) 확인. API 키 노출된 옛 버전 완전 차단
+- 1주차 ③④ 완료: 학생 접속 체계 + 세션 토큰
+  - 서버: `api/student.js`(lookup/join/me), `api/_lib.js`(Admin SDK 초기화·HMAC 토큰·scrypt 비밀번호 해시). Firestore 접근은 Admin SDK만
+  - 서비스 계정 키는 firebase CLI 로그인 토큰으로 IAM API에서 발급 → `FIREBASE_SERVICE_ACCOUNT_B64`, `STUDENT_TOKEN_SECRET` 환경변수(.env + Vercel production) 등록
+  - 활동코드는 `joinCodes/{code}` 톱레벨 매핑(콜렉션그룹 인덱스 불필요). 세션 생성 시 자동 발급, 기존 세션은 대시보드에서 재발급 버튼
+  - 학생 문서: `classes/{id}/students/{출석번호}` — 해시·솔트·입장 시각만, 이름 없음. 교사 초기화 = 문서 삭제
+  - 검증: 로컬 13개 시나리오 + 운영(Vercel) 실 API 입장 흐름 통과. firestore.rules 배포 완료
+  - 학생 입장 후 화면(`/student/session`)은 아직 게이트만 — 기존 활동 기능 연결은 다음 단계
+- **다음 작업**: 1주차 ⑤~⑦ — Firestore 규칙 전면 재작성(학생 직접 접근 제거), 교사 대시보드 모듈 선택 UI, 기존 기능(감상 루프·승인 큐·챗봇)을 학생 토큰 기반 API로 연결(SessionWorkspace 개편)
 
 ## 6. 비용·제약 메모
 
