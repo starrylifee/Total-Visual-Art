@@ -6,7 +6,6 @@
  */
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { getAuth } from "firebase-admin/auth";
 import crypto from "node:crypto";
 
 const clean = (v) => (v || "").replace(/^﻿/, "").trim();
@@ -39,10 +38,23 @@ export async function authenticateRequest(req) {
     }
     const teacherToken = req.headers["x-teacher-token"];
     if (teacherToken) {
+        // firebase-admin/auth 대신 Identity Toolkit REST로 검증
+        // (admin/auth가 끌고 오는 jwks-rsa가 Vercel 런타임에서 ESM jose를 require 하다 크래시)
         try {
-            adminDb(); // 앱 초기화 보장
-            const decoded = await getAuth().verifyIdToken(teacherToken);
-            return { role: "teacher", uid: decoded.uid };
+            const apiKey = clean(process.env.VITE_FIREBASE_API_KEY);
+            if (!apiKey) return null;
+            const resp = await fetch(
+                `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${apiKey}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ idToken: teacherToken }),
+                }
+            );
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            const uid = data.users?.[0]?.localId;
+            return uid ? { role: "teacher", uid } : null;
         } catch {
             return null;
         }
