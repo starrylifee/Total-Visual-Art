@@ -42,6 +42,22 @@ export const geminiService = {
         }
     },
 
+    // 모듈 1: 1차 감상 기반 비계 질문 (루브릭·작품 정보를 근거로 3개)
+    scaffoldQuestions: async (firstText, rubric, masterpiece) => {
+        const data = await callAI({
+            action: "scaffold",
+            firstText,
+            rubric,
+            masterpiece: masterpiece ? {
+                title: masterpiece.title,
+                artist: masterpiece.artist,
+                formalElements: masterpiece.formalElements,
+                appreciationPoints: masterpiece.appreciationPoints,
+            } : null,
+        });
+        return data.questions;
+    },
+
     // Chatbot (Multi-turn)
     chatWithPersona: async (history, message, systemInstruction) => {
         try {

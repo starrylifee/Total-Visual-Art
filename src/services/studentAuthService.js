@@ -59,6 +59,18 @@ export const studentAuthService = {
     submitAppreciation: (observation, reflection) =>
         call({ action: "appreciation-submit", token: localStorage.getItem(TOKEN_KEY), observation, reflection }),
 
+    // 모듈 1: 1차 감상(+AI 질문) / 2차 감상 저장, 재입장 복원
+    saveDeepFirst: (firstText, questions) =>
+        call({ action: "deep-save", token: localStorage.getItem(TOKEN_KEY), stage: "first", firstText, questions }),
+
+    saveDeepSecond: (secondText) =>
+        call({ action: "deep-save", token: localStorage.getItem(TOKEN_KEY), stage: "second", secondText }),
+
+    getDeepAppreciation: async () => {
+        const data = await call({ action: "deep-get", token: localStorage.getItem(TOKEN_KEY) });
+        return data.data;
+    },
+
     getInfo: () => {
         try {
             return JSON.parse(localStorage.getItem(INFO_KEY));

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { geminiService } from '../services/gemini.js';
 import { studentAuthService } from '../services/studentAuthService';
 import { getMasterpiece } from '../data/masterpieces';
+import DeepAppreciation from './DeepAppreciation';
 import MediaEmbed from './MediaEmbed';
 import { Image, MessageSquare, PenTool, Loader, Send, X, CheckCircle, AlertCircle, Video, RefreshCw } from 'lucide-react';
 
@@ -28,7 +29,8 @@ const StudentWorkspace = ({ session }) => {
     const features = session.features || {};
     const masterpiece = getMasterpiece(session.masterpieceId);
     const rubric = session.rubric || [];
-    const firstTab = features.imageGen ? 'creation'
+    const firstTab = features.deepAppreciation ? 'deep'
+        : features.imageGen ? 'creation'
         : features.vision ? 'vision'
         : features.appreciation ? 'appreciation'
         : features.chat ? 'chat' : 'text';
@@ -187,6 +189,11 @@ const StudentWorkspace = ({ session }) => {
             `}</style>
 
             <div className="workspace-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                {features.deepAppreciation && (
+                    <button className={activeTab === 'deep' ? 'btn-primary' : 'btn-secondary'} onClick={() => setActiveTab('deep')}>
+                        <PenTool size={16} /> 🖼️ 감상 쓰기
+                    </button>
+                )}
                 {features.imageGen && (
                     <button className={activeTab === 'creation' ? 'btn-primary' : 'btn-secondary'} onClick={() => setActiveTab('creation')}>
                         <Image size={16} /> 🖌️ AI 그림 만들기
@@ -215,6 +222,10 @@ const StudentWorkspace = ({ session }) => {
             </div>
 
             <div className="workspace-content" style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: '1rem', padding: '2rem', background: '#fff', overflowY: 'auto' }}>
+
+                {activeTab === 'deep' && (
+                    <DeepAppreciation session={session} showToast={showToast} />
+                )}
 
                 {activeTab === 'creation' && (
                     <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>

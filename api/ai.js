@@ -7,6 +7,7 @@
  *  { action: "refine",  text, systemPrompt }                        -> { text }
  *  { action: "chat",    history, message, systemInstruction }       -> { text }
  *  { action: "image",   prompt }                                    -> { success, imageDataUrl | error }
+ *  { action: "scaffold", firstText, rubric, masterpiece }           -> { questions: [...] }  (모듈1 감상 비계)
  */
 import { GoogleGenAI } from "@google/genai";
 import { authenticateRequest } from "./_lib.js";
@@ -84,6 +85,62 @@ export default async function handler(req, res) {
                     },
                 });
                 return res.status(200).json({ text: response.text });
+            }
+
+            // 모듈 1: 루브릭 + 작품 정보 + 1차 감상을 근거로 2차 감상을 이끄는 비계 질문 생성
+            case "scaffold": {
+                const { firstText, rubric, masterpiece } = body;
+                if (!firstText || String(firstText).trim().length < 5) {
+                    return res.status(400).json({ error: "1차 감상을 먼저 조금 더 적어 주세요." });
+                }
+                const rubricText = Array.isArray(rubric) && rubric.length
+                    ? rubric.map((r, i) => `${i + 1}. ${r}`).join("\n")
+                    : "1. 작품에서 본 것을 자세히 말했나요?\n2. 작품의 의미를 나만의 생각으로 해석했나요?";
+                const artText = masterpiece
+                    ? `작품: ${masterpiece.title} (${masterpiece.artist})\n조형 요소: ${masterpiece.formalElements || ""}\n감상 포인트: ${(masterpiece.appreciationPoints || []).join(" / ")}`
+                    : "작품 정보 없음 (학급에서 정한 작품)";
+
+                const prompt = `당신은 초등학교 미술 감상 수업을 돕는 선생님입니다.
+학생이 쓴 1차 감상을 읽고, 학생이 2차 감상에서 더 깊게 생각하도록 돕는 질문을 만드세요.
+
+[감상 작품 정보]
+${artText}
+
+[우리 반 감상 약속(루브릭)]
+${rubricText}
+
+[학생의 1차 감상]
+"${String(firstText).slice(0, 2000)}"
+
+[질문 만들기 규칙]
+- 정확히 3개의 질문을 만드세요.
+- 학생의 1차 감상에서 "이미 잘한 부분"을 짚은 뒤, 루브릭 중 "아직 부족한 부분"을 채우도록 이끄는 질문일 것.
+- 학생이 쓴 표현을 직접 인용하며 물어볼 것 (예: "'하늘이 무섭다'고 했는데, 어떤 색 때문에 그렇게 느꼈나요?").
+- 초등학생이 이해할 수 있는 쉬운 말, 한 문장, 물음표로 끝낼 것.
+- 정답을 알려주지 말고 생각을 여는 질문만 할 것.
+
+JSON 배열로만 답하세요. 예: ["질문1?", "질문2?", "질문3?"]`;
+
+                const response = await ai.models.generateContent({
+                    model: TEXT_MODEL,
+                    contents: prompt,
+                    config: { responseMimeType: "application/json" },
+                });
+                let questions = [];
+                try {
+                    const parsed = JSON.parse(response.text);
+                    questions = (Array.isArray(parsed) ? parsed : parsed.questions || [])
+                        .map((q) => String(q).trim()).filter(Boolean).slice(0, 3);
+                } catch {
+                    // JSON 실패 시 줄 단위 fallback
+                    questions = String(response.text || "").split("\n")
+                        .map((l) => l.replace(/^[\s\-*\d."]+/, "").trim())
+                        .filter((l) => l.includes("?")).slice(0, 3);
+                }
+                if (!questions.length) {
+                    return res.status(500).json({ error: "질문 생성에 실패했어요. 다시 시도해 주세요." });
+                }
+                return res.status(200).json({ questions });
             }
 
             case "image": {

@@ -11,6 +11,8 @@
  *  { action: "queue-submit",        token, prompt }                 -> 이미지 생성 승인 요청
  *  { action: "queue-list",          token }                         -> 내 생성 요청 목록
  *  { action: "appreciation-submit", token, observation, reflection } -> 감상 저장
+ *  { action: "deep-save", token, stage, firstText, questions, secondText } -> 1·2차 감상 저장(모듈1)
+ *  { action: "deep-get",  token }                                    -> 내 1·2차 감상 불러오기(재입장 복원)
  */
 import { adminDb, signStudentToken, verifyStudentToken, hashPassword, makeSalt } from "./_lib.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -226,6 +228,63 @@ export default async function handler(req, res) {
                     createdAt: FieldValue.serverTimestamp(),
                 });
                 return res.status(200).json({ id: docRef.id });
+            }
+
+            // 모듈 1: 1차 감상 → AI 비계 질문 → 2차 감상. 학생당 문서 1개(재입장 복원 가능)
+            case "deep-save": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const stage = body.stage;
+                const docRef = db.doc(`classes/${classId}/sessions/${sessionId}/deepAppreciations/${studentIdOf(studentNo)}`);
+
+                if (stage === "first") {
+                    const firstText = String(body.firstText || "").trim();
+                    const questions = (Array.isArray(body.questions) ? body.questions : [])
+                        .map((q) => String(q).slice(0, 300)).slice(0, 5);
+                    if (!firstText) return res.status(400).json({ error: "1차 감상을 적어 주세요." });
+                    if (firstText.length > 5000) return res.status(400).json({ error: "글이 너무 길어요. 조금 줄여 주세요." });
+                    await docRef.set({
+                        studentId: studentIdOf(studentNo),
+                        studentName: `${studentNo}번`,
+                        firstText,
+                        questions,
+                        status: "first_done",
+                        updatedAt: FieldValue.serverTimestamp(),
+                    }, { merge: true });
+                    return res.status(200).json({ ok: true });
+                }
+                if (stage === "second") {
+                    const secondText = String(body.secondText || "").trim();
+                    if (!secondText) return res.status(400).json({ error: "2차 감상을 적어 주세요." });
+                    if (secondText.length > 5000) return res.status(400).json({ error: "글이 너무 길어요. 조금 줄여 주세요." });
+                    await docRef.set({
+                        secondText,
+                        status: "second_done",
+                        updatedAt: FieldValue.serverTimestamp(),
+                    }, { merge: true });
+                    return res.status(200).json({ ok: true });
+                }
+                return res.status(400).json({ error: "stage는 first 또는 second여야 합니다." });
+            }
+
+            case "deep-get": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const snap = await db.doc(`classes/${classId}/sessions/${sessionId}/deepAppreciations/${studentIdOf(studentNo)}`).get();
+                if (!snap.exists) return res.status(200).json({ data: null });
+                const x = snap.data();
+                return res.status(200).json({
+                    data: {
+                        firstText: x.firstText || "",
+                        questions: x.questions || [],
+                        secondText: x.secondText || "",
+                        status: x.status || "",
+                    },
+                });
             }
 
             default:

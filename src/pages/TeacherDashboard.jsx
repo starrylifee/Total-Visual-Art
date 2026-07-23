@@ -53,7 +53,7 @@ const TeacherDashboard = () => {
     const emptySessionData = {
         title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '',
         masterpieceId: null,
-        features: { vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true }
+        features: { deepAppreciation: true, vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true }
     };
     const [newSessionData, setNewSessionData] = useState(emptySessionData);
     // 루브릭 편집 대상 세션 (모듈 1: 감상 루브릭 공동 설정)
@@ -350,6 +350,9 @@ const TeacherDashboard = () => {
                         {/* Feature Toggles */}
                         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', padding: '0.75rem', background: '#f8f8f8', borderRadius: '0.5rem' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
+                                <input type="checkbox" checked={newSessionData.features?.deepAppreciation} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, deepAppreciation: e.target.checked } })} /> 감상 쓰기(1·2차)
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
                                 <input type="checkbox" checked={newSessionData.features?.vision} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, vision: e.target.checked } })} /> 작품 분석
                             </label>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
@@ -380,7 +383,7 @@ const TeacherDashboard = () => {
                             <textarea value={newSessionData.chatbotInstruction} onChange={e => setNewSessionData({ ...newSessionData, chatbotInstruction: e.target.value })} placeholder="챗봇 성격 설정 (예: 당신은 미술관 큐레이터입니다...)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd', minHeight: '60px' }} />
                         )}
 
-                        {newSessionData.features?.appreciation && (
+                        {(newSessionData.features?.appreciation || newSessionData.features?.deepAppreciation) && (
                             <>
                                 <div style={{ marginBottom: '0.75rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
                                     <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>🖼️ 감상 작품 선택 (명화 16종)</p>
@@ -519,7 +522,7 @@ const TeacherDashboard = () => {
                                                             >
                                                                 {sess.status === 'archived' ? '다시 열기' : '보관'}
                                                             </button>
-                                                            {sess.features?.appreciation && (
+                                                            {(sess.features?.appreciation || sess.features?.deepAppreciation) && (
                                                                 <button
                                                                     onClick={() => setRubricSession(sess)}
                                                                     style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid var(--accent)', background: 'white', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
