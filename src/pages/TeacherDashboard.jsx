@@ -7,6 +7,9 @@ import { sessionService } from '../services/sessionService';
 import { badgeService } from '../services/badgeService';
 import { imageGenService } from '../services/imageGenService';
 import ClassSlideshow from '../components/ClassSlideshow';
+import MasterpiecePicker from '../components/MasterpiecePicker';
+import RubricEditor from '../components/RubricEditor';
+import { DEFAULT_RUBRIC } from '../data/masterpieces';
 import { Plus, Users, Award, Palette, Play, Monitor, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -47,10 +50,14 @@ const TeacherDashboard = () => {
     const [selectedClass, setSelectedClass] = useState(null);
     const [sessions, setSessions] = useState([]);
     const [showSessionModal, setShowSessionModal] = useState(false);
-    const [newSessionData, setNewSessionData] = useState({
+    const emptySessionData = {
         title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '',
+        masterpieceId: null,
         features: { vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true }
-    });
+    };
+    const [newSessionData, setNewSessionData] = useState(emptySessionData);
+    // 루브릭 편집 대상 세션 (모듈 1: 감상 루브릭 공동 설정)
+    const [rubricSession, setRubricSession] = useState(null);
     const [isLoadingClasses, setIsLoadingClasses] = useState(true);
     const [isLoadingClassDetail, setIsLoadingClassDetail] = useState(false);
     const [isCreatingClass, setIsCreatingClass] = useState(false);
@@ -141,10 +148,11 @@ const TeacherDashboard = () => {
             await sessionService.createSession(selectedClass.id, {
                 ...newSessionData,
                 title: newSessionData.title.trim(),
+                rubric: DEFAULT_RUBRIC,
                 teacherId: currentUser.uid
             });
             setShowSessionModal(false);
-            setNewSessionData({ title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '', features: { vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true } });
+            setNewSessionData(emptySessionData);
             const classSessions = await sessionService.getClassSessions(selectedClass.id);
             setSessions(classSessions);
             showToast("✅ 활동이 생성되었습니다!", "success");
@@ -374,7 +382,20 @@ const TeacherDashboard = () => {
 
                         {newSessionData.features?.appreciation && (
                             <>
-                                <input value={newSessionData.referenceImageUrl || ''} onChange={e => setNewSessionData({ ...newSessionData, referenceImageUrl: e.target.value })} placeholder="감상 작품 이미지 URL" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                <div style={{ marginBottom: '0.75rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
+                                    <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>🖼️ 감상 작품 선택 (명화 16종)</p>
+                                    <MasterpiecePicker
+                                        value={newSessionData.masterpieceId}
+                                        onChange={(m) => setNewSessionData({
+                                            ...newSessionData,
+                                            masterpieceId: m ? m.id : null,
+                                            referenceImageUrl: m ? m.imageUrl : '',
+                                        })}
+                                    />
+                                </div>
+                                {!newSessionData.masterpieceId && (
+                                    <input value={newSessionData.referenceImageUrl || ''} onChange={e => setNewSessionData({ ...newSessionData, referenceImageUrl: e.target.value })} placeholder="또는 감상 작품 이미지 URL 직접 입력" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                )}
                                 <input value={newSessionData.referenceVideoUrl || ''} onChange={e => setNewSessionData({ ...newSessionData, referenceVideoUrl: e.target.value })} placeholder="참고 영상 URL (YouTube 등, 선택)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
                             </>
                         )}
@@ -385,6 +406,20 @@ const TeacherDashboard = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* 감상 루브릭 공동 설정 모달 */}
+            {rubricSession && selectedClass && (
+                <RubricEditor
+                    classId={selectedClass.id}
+                    session={rubricSession}
+                    onClose={() => setRubricSession(null)}
+                    onSaved={async (rubric) => {
+                        setRubricSession(null);
+                        setSessions(sessions.map(s => (s.id === rubricSession.id ? { ...s, rubric } : s)));
+                        showToast('📋 감상 루브릭이 저장되었습니다!', 'success');
+                    }}
+                />
             )}
 
             {/* Classes Tab */}
@@ -477,12 +512,22 @@ const TeacherDashboard = () => {
                                                         <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: '600', color: sess.status === 'archived' ? '#b45309' : '#059669' }}>
                                                             {sess.status === 'archived' ? '보관됨' : '활성'}
                                                         </p>
-                                                        <button
-                                                            onClick={() => handleToggleSessionStatus(sess.id, sess.status)}
-                                                            style={{ marginTop: '0.5rem', padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #d1d5db', background: 'white', color: 'var(--text-main)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '500' }}
-                                                        >
-                                                            {sess.status === 'archived' ? '다시 열기' : '보관'}
-                                                        </button>
+                                                        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                                            <button
+                                                                onClick={() => handleToggleSessionStatus(sess.id, sess.status)}
+                                                                style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #d1d5db', background: 'white', color: 'var(--text-main)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '500' }}
+                                                            >
+                                                                {sess.status === 'archived' ? '다시 열기' : '보관'}
+                                                            </button>
+                                                            {sess.features?.appreciation && (
+                                                                <button
+                                                                    onClick={() => setRubricSession(sess)}
+                                                                    style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid var(--accent)', background: 'white', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
+                                                                >
+                                                                    📋 감상 루브릭{sess.rubric?.length ? ` (${sess.rubric.length})` : ''}
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <Link to={`/class/${selectedClass.id}/session/${sess.id}`} style={{ padding: '0.5rem 1rem', borderRadius: '1rem', background: 'var(--primary)', color: 'white', textDecoration: 'none', fontWeight: '500' }}>입장</Link>
                                                 </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { geminiService } from '../services/gemini.js';
 import { studentAuthService } from '../services/studentAuthService';
+import { getMasterpiece } from '../data/masterpieces';
 import MediaEmbed from './MediaEmbed';
 import { Image, MessageSquare, PenTool, Loader, Send, X, CheckCircle, AlertCircle, Video, RefreshCw } from 'lucide-react';
 
@@ -25,6 +26,8 @@ const QUEUE_POLL_MS = 10000;
 // 학생 활동 화면 (토큰 기반). session = /api/student me 응답
 const StudentWorkspace = ({ session }) => {
     const features = session.features || {};
+    const masterpiece = getMasterpiece(session.masterpieceId);
+    const rubric = session.rubric || [];
     const firstTab = features.imageGen ? 'creation'
         : features.vision ? 'vision'
         : features.appreciation ? 'appreciation'
@@ -355,10 +358,24 @@ const StudentWorkspace = ({ session }) => {
                         <p style={{ color: 'var(--text-sub)' }}>이 활동에 감상 작품이 설정되지 않았습니다. 선생님께 알려주세요.</p>
                     ) : (
                         <div style={{ display: 'flex', gap: '2rem', flexDirection: 'column' }}>
+                            {rubric.length > 0 && (
+                                <div style={{ background: '#eef2ff', border: '2px solid var(--primary)', borderRadius: '1rem', padding: '1rem 1.5rem' }}>
+                                    <h3 style={{ margin: '0 0 0.5rem' }}>📋 우리 반 감상 약속</h3>
+                                    <ol style={{ margin: 0, paddingLeft: '1.4rem', fontSize: '1.05rem', lineHeight: 1.8 }}>
+                                        {rubric.map((r, i) => <li key={i}>{r}</li>)}
+                                    </ol>
+                                </div>
+                            )}
                             <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
                                 <div style={{ flex: '1 1 300px' }}>
                                     <h3>📖 1단계: 깊이 감상하기</h3>
                                     <img src={session.referenceImageUrl} alt="참조 작품" style={{ maxWidth: '100%', borderRadius: '1rem', maxHeight: '400px', boxShadow: 'var(--shadow)' }} />
+                                    {masterpiece && (
+                                        <p style={{ margin: '0.5rem 0 0', fontSize: '1rem', color: 'var(--text-sub)' }}>
+                                            <strong style={{ color: 'var(--text-main)' }}>{masterpiece.title}</strong>
+                                            {' · '}{masterpiece.artist} ({masterpiece.year}) · {masterpiece.style}
+                                        </p>
+                                    )}
                                     {session.referenceVideoUrl && (
                                         <div style={{ marginTop: '1rem' }}>
                                             <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>

@@ -117,6 +117,12 @@ export const sessionService = {
         }
     },
 
+    // TEACHER: 세션 설정 부분 수정 (루브릭·명화·프롬프트 등)
+    updateSession: async (classId, sessionId, data) => {
+        const sessionRef = doc(db, "classes", classId, "sessions", sessionId);
+        await updateDoc(sessionRef, { ...data, updatedAt: serverTimestamp() });
+    },
+
     updateSessionStatus: async (classId, sessionId, status) => {
         try {
             const sessionRef = doc(db, "classes", classId, "sessions", sessionId);

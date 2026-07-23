@@ -252,3 +252,14 @@ export const MASTERPIECES = [
 ];
 
 export const getMasterpiece = (id) => MASTERPIECES.find((m) => m.id === id) || null;
+
+// 선택 그리드용 축소판 (원본 URL의 width 파라미터만 교체)
+export const thumbUrl = (m, width = 320) => m.imageUrl.replace(/width=\d+/, `width=${width}`);
+
+// 감상 루브릭 기본 템플릿 (펠드만 4단계 기반) — 교사가 학생 의견을 반영해 수정한다
+export const DEFAULT_RUBRIC = [
+    "작품에서 본 것(색, 선, 모양, 인물)을 자세히 말했나요?",
+    "색과 모양이 서로 어떻게 어울리는지 이야기했나요?",
+    "작품의 의미나 화가의 마음을 나만의 생각으로 해석했나요?",
+    "작품에 대한 나의 평가와 그 까닭을 말했나요?",
+];

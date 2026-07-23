@@ -54,6 +54,8 @@ function sessionInfo(r) {
         chatbotInstruction: s.chatbotInstruction || "",
         referenceImageUrl: s.referenceImageUrl || "",
         referenceVideoUrl: s.referenceVideoUrl || "",
+        masterpieceId: s.masterpieceId || null,
+        rubric: Array.isArray(s.rubric) ? s.rubric : [],
     };
 }
 
