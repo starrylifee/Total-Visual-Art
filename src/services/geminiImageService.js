@@ -2,6 +2,7 @@
  * AI 이미지 생성 서비스 (클라이언트)
  * 실제 생성은 서버(/api/ai)에서 수행 — API 키는 클라이언트에 존재하지 않는다.
  */
+import { authHeaders } from "./apiAuth";
 
 /**
  * Generate an image from a text prompt
@@ -14,7 +15,7 @@ export async function generateImage(prompt) {
 
         const response = await fetch("/api/ai", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...(await authHeaders()) },
             body: JSON.stringify({ action: "image", prompt }),
         });
         const data = await response.json().catch(() => ({}));

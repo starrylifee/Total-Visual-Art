@@ -6,6 +6,7 @@
  */
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import crypto from "node:crypto";
 
 const clean = (v) => (v || "").replace(/^﻿/, "").trim();
@@ -24,6 +25,29 @@ export function adminDb() {
         _db.settings({ preferRest: true }); // 콜드스타트 단축
     } catch { /* settings는 첫 사용 전 1회만 가능 */ }
     return _db;
+}
+
+/**
+ * 요청 인증: 학생 토큰(x-student-token) 또는 교사 Firebase ID 토큰(x-teacher-token)
+ * 반환: { role: 'student', ...페이로드 } | { role: 'teacher', uid } | null
+ */
+export async function authenticateRequest(req) {
+    const studentToken = req.headers["x-student-token"];
+    if (studentToken) {
+        const payload = verifyStudentToken(studentToken);
+        return payload ? { role: "student", ...payload } : null;
+    }
+    const teacherToken = req.headers["x-teacher-token"];
+    if (teacherToken) {
+        try {
+            adminDb(); // 앱 초기화 보장
+            const decoded = await getAuth().verifyIdToken(teacherToken);
+            return { role: "teacher", uid: decoded.uid };
+        } catch {
+            return null;
+        }
+    }
+    return null;
 }
 
 // ---------- 학생 세션 토큰 ----------

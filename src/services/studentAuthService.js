@@ -47,6 +47,18 @@ export const studentAuthService = {
 
     getToken: () => localStorage.getItem(TOKEN_KEY),
 
+    // ---- 활동 데이터 (토큰 필요) ----
+    submitPrompt: (prompt) =>
+        call({ action: "queue-submit", token: localStorage.getItem(TOKEN_KEY), prompt }),
+
+    listMyQueue: async () => {
+        const data = await call({ action: "queue-list", token: localStorage.getItem(TOKEN_KEY) });
+        return data.items || [];
+    },
+
+    submitAppreciation: (observation, reflection) =>
+        call({ action: "appreciation-submit", token: localStorage.getItem(TOKEN_KEY), observation, reflection }),
+
     getInfo: () => {
         try {
             return JSON.parse(localStorage.getItem(INFO_KEY));

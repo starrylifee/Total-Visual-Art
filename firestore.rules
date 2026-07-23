@@ -1,5 +1,8 @@
 rules_version = '2';
 
+// 접근 모델 (2026-07 개편):
+// - 교사: 구글 로그인(Firebase Auth) → 자기 학급만 직접 접근
+// - 학생: Firebase 계정 없음. 모든 읽기·쓰기는 서버리스 API(Admin SDK, 규칙 미적용)가 대행
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -10,42 +13,23 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    function currentUserExists() {
-      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
     function isTeacher() {
-      return currentUserExists() && currentUserDoc().data.role == 'teacher';
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && currentUserDoc().data.role == 'teacher';
     }
 
     function isSelf(userId) {
       return signedIn() && request.auth.uid == userId;
     }
 
-    function classDoc(classId) {
-      return get(/databases/$(database)/documents/classes/$(classId));
-    }
-
-    function classExists(classId) {
-      return exists(/databases/$(database)/documents/classes/$(classId));
-    }
-
     function isClassTeacher(classId) {
-      return signedIn() && classExists(classId) && classDoc(classId).data.teacherId == request.auth.uid;
+      return signedIn()
+        && exists(/databases/$(database)/documents/classes/$(classId))
+        && get(/databases/$(database)/documents/classes/$(classId)).data.teacherId == request.auth.uid;
     }
 
-    function isClassStudent(classId) {
-      return signedIn() && classExists(classId) && request.auth.uid in classDoc(classId).data.students;
-    }
-
-    function isClassPendingStudent(classId) {
-      return signedIn() && classExists(classId) && request.auth.uid in classDoc(classId).data.pendingStudents;
-    }
-
-    function isClassMember(classId) {
-      return isClassTeacher(classId) || isClassStudent(classId) || isClassPendingStudent(classId);
-    }
-
+    // 교사 계정 프로필
     match /users/{userId} {
       allow read: if isSelf(userId) || isTeacher();
       allow create: if isSelf(userId);
@@ -58,7 +42,7 @@ service cloud.firestore {
       }
     }
 
-    // 활동코드 -> 세션 매핑. 학생 조회는 서버(Admin SDK)가 하므로 클라이언트 읽기는 교사용
+    // 활동코드 -> 세션 매핑. 학생 조회는 서버가 하므로 클라이언트는 교사용
     match /joinCodes/{code} {
       allow read: if signedIn();
       allow create: if isTeacher()
@@ -69,28 +53,16 @@ service cloud.firestore {
     }
 
     match /classes/{classId} {
-      // Invite-code lookup currently happens on the client, so authenticated users need read access.
-      allow read: if signedIn();
+      allow read: if signedIn() && resource.data.teacherId == request.auth.uid;
       allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid;
+      allow update: if isClassTeacher(classId);
       allow delete: if false;
 
-      allow update: if isClassTeacher(classId)
-        || (
-          signedIn()
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['pendingStudents'])
-          && !(request.auth.uid in resource.data.students)
-          && !(request.auth.uid in resource.data.pendingStudents)
-          && request.resource.data.pendingStudents.size() == resource.data.pendingStudents.size() + 1
-          && request.resource.data.pendingStudents.hasAll(resource.data.pendingStudents)
-          && request.resource.data.pendingStudents.hasAny([request.auth.uid])
-        );
-
       match /badges/{badgeId} {
-        allow read: if isClassMember(classId);
-        allow create, update, delete: if isClassTeacher(classId);
+        allow read, create, update, delete: if isClassTeacher(classId);
       }
 
-      // 출석번호별 학생 문서 (비밀번호 해시). 쓰기는 서버(Admin SDK)만, 교사는 조회·초기화(삭제)만
+      // 출석번호별 학생 문서 (비밀번호 해시). 쓰기는 서버만, 교사는 조회·초기화(삭제)만
       match /students/{studentNo} {
         allow read: if isClassTeacher(classId);
         allow delete: if isClassTeacher(classId);
@@ -98,34 +70,17 @@ service cloud.firestore {
       }
 
       match /sessions/{sessionId} {
-        allow read: if isClassTeacher(classId)
-          || (
-            isClassStudent(classId)
-            && resource.data.isActive != false
-            && resource.data.status != 'archived'
-          );
-        allow create, update, delete: if isClassTeacher(classId);
+        allow read, create, update, delete: if isClassTeacher(classId);
 
+        // 이미지 생성 큐: 학생 제출은 서버 경유, 교사는 승인·생성·공개·삭제
         match /generationQueue/{genId} {
-          allow read: if isClassTeacher(classId)
-            || (
-              isClassStudent(classId)
-              && resource.data.studentId == request.auth.uid
-            );
-          allow create: if isClassStudent(classId)
-            && request.resource.data.studentId == request.auth.uid;
-          allow update, delete: if isClassTeacher(classId);
+          allow read, create, update, delete: if isClassTeacher(classId);
         }
 
+        // 감상 기록: 학생 제출은 서버 경유, 교사는 열람만
         match /appreciations/{appreciationId} {
-          allow read: if isClassTeacher(classId)
-            || (
-              isClassStudent(classId)
-              && resource.data.studentId == request.auth.uid
-            );
-          allow create: if isClassStudent(classId)
-            && request.resource.data.studentId == request.auth.uid;
-          allow update, delete: if false;
+          allow read: if isClassTeacher(classId);
+          allow create, update, delete: if false;
         }
       }
     }

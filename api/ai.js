@@ -9,6 +9,7 @@
  *  { action: "image",   prompt }                                    -> { success, imageDataUrl | error }
  */
 import { GoogleGenAI } from "@google/genai";
+import { authenticateRequest } from "./_lib.js";
 
 const TEXT_MODEL = "gemini-2.5-flash";
 const IMAGE_MODEL = "gemini-2.5-flash-image";
@@ -16,6 +17,16 @@ const IMAGE_MODEL = "gemini-2.5-flash-image";
 export default async function handler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "POST만 허용됩니다." });
+    }
+
+    // 학생 토큰 또는 교사 로그인 필수 (무단 호출로 API 한도가 소모되는 것 방지)
+    const requester = await authenticateRequest(req);
+    if (!requester) {
+        return res.status(401).json({ error: "인증이 필요합니다. 다시 입장(로그인)해 주세요." });
+    }
+    // 이미지 생성은 교사만 (승인 큐를 거쳐 교사 화면에서 실행됨)
+    if (req.body?.action === "image" && requester.role !== "teacher") {
+        return res.status(403).json({ error: "이미지 생성은 선생님만 실행할 수 있어요." });
     }
 
     // BOM·공백 제거 (환경변수 등록 과정에서 섞일 수 있음)

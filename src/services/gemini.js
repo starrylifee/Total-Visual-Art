@@ -3,10 +3,12 @@
  * 실제 AI 호출은 서버(/api/ai)에서 수행 — API 키는 클라이언트에 존재하지 않는다.
  */
 
+import { authHeaders } from "./apiAuth";
+
 async function callAI(payload) {
     const response = await fetch("/api/ai", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify(payload),
     });
     const data = await response.json().catch(() => ({}));

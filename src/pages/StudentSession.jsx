@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentAuthService } from '../services/studentAuthService';
-import { LogOut, CheckCircle } from 'lucide-react';
+import StudentWorkspace from '../components/StudentWorkspace';
+import { LogOut } from 'lucide-react';
 
-// 학생 활동 화면 (토큰 기반). 다음 단계에서 기존 활동 기능(감상 루프·이미지 생성·챗봇)이 여기에 연결된다.
+// 학생 활동 화면 (토큰 기반)
 const StudentSession = () => {
     const navigate = useNavigate();
     const [info, setInfo] = useState(null);
@@ -30,23 +31,21 @@ const StudentSession = () => {
     }
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', padding: '1rem' }}>
-            <div style={{ background: 'var(--card-bg)', borderRadius: '1.5rem', boxShadow: 'var(--shadow)', padding: '2.5rem', width: '100%', maxWidth: '640px', textAlign: 'center' }}>
-                <CheckCircle size={52} color="#10b981" />
-                <h1 style={{ margin: '1rem 0 0.5rem', color: 'var(--text-main)' }}>입장 완료!</h1>
-                <p style={{ fontSize: '1.3rem', color: 'var(--text-main)', margin: '0.25rem 0' }}>
-                    {info.className} · <strong>{info.studentNo}번</strong>
-                </p>
-                <p style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--primary)', margin: '0.75rem 0 1.5rem' }}>
-                    {info.sessionTitle}
-                </p>
-                <p style={{ color: 'var(--text-sub)', marginBottom: '2rem' }}>
-                    활동 화면을 준비하고 있어요. 선생님 안내를 기다려 주세요.
-                </p>
-                <button onClick={handleLeave} style={{ padding: '0.75rem 1.5rem', borderRadius: '0.75rem', border: '1px solid #ddd', background: 'white', color: 'var(--text-main)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}>
-                    <LogOut size={18} /> 나가기
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem', minHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+            <header style={{
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
+                padding: '1.25rem 2rem', borderRadius: '1rem', marginBottom: '1.5rem', color: 'white',
+                boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem'
+            }}>
+                <div>
+                    <h1 style={{ margin: 0, fontSize: '1.6rem' }}>📚 {info.sessionTitle}</h1>
+                    <p style={{ margin: '0.4rem 0 0', opacity: 0.9 }}>{info.className} · {info.studentNo}번</p>
+                </div>
+                <button onClick={handleLeave} style={{ padding: '0.6rem 1.2rem', borderRadius: '2rem', border: 'none', background: 'rgba(255,255,255,0.25)', color: 'white', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+                    <LogOut size={16} /> 나가기
                 </button>
-            </div>
+            </header>
+            <StudentWorkspace session={info} />
         </div>
     );
 };

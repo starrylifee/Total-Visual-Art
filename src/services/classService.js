@@ -6,37 +6,31 @@ import {
     getDocs,
     doc,
     updateDoc,
-    arrayUnion,
     serverTimestamp,
-    getDoc,
-    runTransaction,
     deleteDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-// Helper to generate a random 6-character code
-const generateInviteCode = () => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-};
-
 export const classService = {
-    // TEACHER: Create a new class
-    createClass: async (teacherId, className) => {
+    // TEACHER: Create a new class (학생은 활동코드로 입장하므로 명단·초대코드 없음)
+    createClass: async (teacherId, className, studentCount = 30) => {
         try {
-            const inviteCode = generateInviteCode();
             const classRef = await addDoc(collection(db, "classes"), {
                 name: className,
                 teacherId: teacherId,
-                inviteCode: inviteCode,
-                students: [], // Array of student UIDs
-                pendingStudents: [], // Array of pending student UIDs
+                studentCount: studentCount,
                 createdAt: serverTimestamp()
             });
-            return { id: classRef.id, inviteCode };
+            return { id: classRef.id };
         } catch (error) {
             console.error("Error creating class:", error);
             throw error;
         }
+    },
+
+    // TEACHER: 학생 수(출석번호 범위) 변경
+    updateStudentCount: async (classId, studentCount) => {
+        await updateDoc(doc(db, "classes", classId), { studentCount });
     },
 
     // TEACHER: Get classes for a teacher
@@ -51,99 +45,6 @@ export const classService = {
         }
     },
 
-    // STUDENT: Request to join a class
-    joinClassRequest: async (studentId, inviteCode) => {
-        try {
-            // Find class by invite code
-            const q = query(collection(db, "classes"), where("inviteCode", "==", inviteCode));
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
-                throw new Error("Invalid Invite Code");
-            }
-
-            const classDoc = querySnapshot.docs[0];
-            const classData = classDoc.data();
-            const students = Array.isArray(classData.students) ? classData.students : [];
-            const pendingStudents = Array.isArray(classData.pendingStudents) ? classData.pendingStudents : [];
-
-            // Check if already joined or pending
-            if (students.includes(studentId)) {
-                throw new Error("Already a member of this class");
-            }
-            if (pendingStudents.includes(studentId)) {
-                throw new Error("Join request already pending");
-            }
-
-            // Add to pending
-            await updateDoc(doc(db, "classes", classDoc.id), {
-                pendingStudents: arrayUnion(studentId)
-            });
-
-            return { success: true, className: classData.name };
-        } catch (error) {
-            console.error("Error joining class:", error);
-            throw error;
-        }
-    },
-
-    // TEACHER: Approve a student
-    approveStudent: async (classId, studentId) => {
-        try {
-            const classRef = doc(db, "classes", classId);
-            const userRef = doc(db, "users", studentId);
-
-            await runTransaction(db, async (transaction) => {
-                const classSnap = await transaction.get(classRef);
-                const userSnap = await transaction.get(userRef);
-
-                if (!classSnap.exists()) {
-                    throw new Error("Class not found");
-                }
-
-                const classData = classSnap.data();
-                const pendingStudents = Array.isArray(classData.pendingStudents) ? classData.pendingStudents : [];
-                const students = Array.isArray(classData.students) ? classData.students : [];
-                const enrolledClasses = userSnap.exists() && Array.isArray(userSnap.data().enrolledClasses)
-                    ? userSnap.data().enrolledClasses
-                    : [];
-
-                transaction.update(classRef, {
-                    pendingStudents: pendingStudents.filter(id => id !== studentId),
-                    students: students.includes(studentId) ? students : [...students, studentId]
-                });
-
-                if (userSnap.exists()) {
-                    transaction.update(userRef, {
-                        enrolledClasses: enrolledClasses.includes(classId) ? enrolledClasses : [...enrolledClasses, classId]
-                    });
-                } else {
-                    transaction.set(userRef, { enrolledClasses: [classId] }, { merge: true });
-                }
-            });
-
-            return true;
-        } catch (error) {
-            console.error("Error approving student:", error);
-            throw error;
-        }
-    },
-
-    // Fetch pending students details (Mock or Real)
-    getPendingStudents: async (studentIds) => {
-        // In a real app, you'd fetch user docs where ID is in studentIds
-        // For simplicity standard query "in" limit is 10.
-        if (!studentIds || studentIds.length === 0) return [];
-
-        const students = [];
-        // Manual fetch loop for simplicity in prototype (or use 'in' query)
-        for (const id of studentIds) {
-            const u = await getDoc(doc(db, "users", id));
-            if (u.exists()) students.push({ id: u.id, ...u.data() });
-        }
-        return students;
-    },
-
     // TEACHER: 비밀번호를 등록한 학생 번호 목록 (활동코드 접속 체계)
     getRegisteredStudents: async (classId) => {
         const snapshot = await getDocs(collection(db, "classes", classId, "students"));
@@ -156,16 +57,5 @@ export const classService = {
     // TEACHER: 학생 비밀번호 초기화 (문서 삭제 -> 다음 입장 때 새로 설정)
     resetStudentPassword: async (classId, studentNo) => {
         await deleteDoc(doc(db, "classes", classId, "students", String(studentNo)));
-    },
-
-    // STUDENT: Get enrolled classes
-    getEnrolledClasses: async (classIds) => {
-        if (!classIds || classIds.length === 0) return [];
-        const classes = [];
-        for (const id of classIds) {
-            const c = await getDoc(doc(db, "classes", id));
-            if (c.exists()) classes.push({ id: c.id, ...c.data() });
-        }
-        return classes;
     }
 };

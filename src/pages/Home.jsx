@@ -29,22 +29,37 @@ const Home = () => {
                 </p>
             </header>
 
-            <div className="hero-actions" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <Link to="/login" className="btn-primary" style={{
+            <div className="hero-actions" style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Link to="/join" className="btn-primary" style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
                     background: 'var(--primary)',
                     color: 'white',
+                    padding: '1rem 2.5rem',
+                    borderRadius: '2rem',
+                    textDecoration: 'none',
+                    fontWeight: '600',
+                    fontSize: '1.2rem',
+                    boxShadow: '0 4px 15px rgba(244, 114, 182, 0.4)'
+                }}>
+                    <Sparkles size={20} />
+                    학생 입장 (활동 코드)
+                </Link>
+                <Link to="/login" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    background: 'var(--card-bg)',
+                    color: 'var(--text-main)',
+                    border: '2px solid var(--accent)',
                     padding: '1rem 2rem',
                     borderRadius: '2rem',
                     textDecoration: 'none',
                     fontWeight: '600',
-                    fontSize: '1.1rem',
-                    boxShadow: '0 4px 15px rgba(244, 114, 182, 0.4)'
+                    fontSize: '1.1rem'
                 }}>
-                    <Sparkles size={20} />
-                    시작하기
+                    👩‍🏫 선생님 로그인
                 </Link>
             </div>
 

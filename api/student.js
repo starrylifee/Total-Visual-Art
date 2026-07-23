@@ -6,6 +6,11 @@
  *  { action: "lookup", code }                       -> 활동 정보 + 등록된 번호 목록
  *  { action: "join",   code, studentNo, password }  -> 최초 입장 시 비밀번호 설정, 재입장 시 확인 -> 세션 토큰 발급
  *  { action: "me",     token }                      -> 토큰 유효성 확인 + 활동 정보 (새로고침 복원용)
+ *
+ * 활동 데이터 (토큰 필요):
+ *  { action: "queue-submit",        token, prompt }                 -> 이미지 생성 승인 요청
+ *  { action: "queue-list",          token }                         -> 내 생성 요청 목록
+ *  { action: "appreciation-submit", token, observation, reflection } -> 감상 저장
  */
 import { adminDb, signStudentToken, verifyStudentToken, hashPassword, makeSalt } from "./_lib.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -36,15 +41,38 @@ async function resolveCode(db, rawCode) {
 }
 
 function sessionInfo(r) {
+    const s = r.sessionData;
     return {
         classId: r.classId,
         sessionId: r.sessionId,
         className: r.classData.name || "",
-        sessionTitle: r.sessionData.title || "",
-        features: r.sessionData.features || null,
+        sessionTitle: s.title || "",
+        features: s.features || null,
         studentCount: r.classData.studentCount || 30,
+        visionPrompt: s.visionPrompt || "",
+        textPrompt: s.textPrompt || "",
+        chatbotInstruction: s.chatbotInstruction || "",
+        referenceImageUrl: s.referenceImageUrl || "",
+        referenceVideoUrl: s.referenceVideoUrl || "",
     };
 }
+
+// 토큰 검증 + 세션이 아직 열려 있는지 확인. 실패 시 {error, status}
+async function requireStudent(db, token) {
+    const auth = verifyStudentToken(token);
+    if (!auth) return { error: "세션이 만료되었어요. 다시 입장해 주세요.", status: 401 };
+    const sessionSnap = await db.doc(`classes/${auth.classId}/sessions/${auth.sessionId}`).get();
+    if (!sessionSnap.exists) return { error: "활동을 찾을 수 없어요.", status: 404 };
+    const session = sessionSnap.data();
+    if (session.isActive === false || session.status === "archived") {
+        return { error: "지금은 닫혀 있는 활동이에요.", status: 403 };
+    }
+    return { auth, sessionData: session };
+}
+
+// 토큰 학생의 Firestore 식별자 (기존 uid 기반 데이터와 구분됨)
+const studentIdOf = (no) => `sno_${no}`;
+const millis = (ts) => (ts && typeof ts.toMillis === "function" ? ts.toMillis() : null);
 
 export default async function handler(req, res) {
     if (req.method !== "POST") {
@@ -129,6 +157,73 @@ export default async function handler(req, res) {
                     studentNo: auth.studentNo,
                     ...sessionInfo({ classId: auth.classId, sessionId: auth.sessionId, classData: classSnap.data(), sessionData: session }),
                 });
+            }
+
+            case "queue-submit": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const prompt = String(body.prompt || "").trim();
+                if (!prompt) return res.status(400).json({ error: "그리고 싶은 내용을 적어 주세요." });
+                if (prompt.length > 1000) return res.status(400).json({ error: "설명이 너무 길어요. 조금 줄여 주세요." });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const docRef = await db.collection(`classes/${classId}/sessions/${sessionId}/generationQueue`).add({
+                    studentId: studentIdOf(studentNo),
+                    studentName: `${studentNo}번`,
+                    prompt,
+                    status: "pending_approval",
+                    createdAt: FieldValue.serverTimestamp(),
+                    imageUrl: null,
+                    rejectionReason: null,
+                });
+                return res.status(200).json({ id: docRef.id });
+            }
+
+            case "queue-list": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const snap = await db.collection(`classes/${classId}/sessions/${sessionId}/generationQueue`)
+                    .where("studentId", "==", studentIdOf(studentNo))
+                    .get();
+                const items = snap.docs
+                    .map((d) => {
+                        const x = d.data();
+                        return {
+                            id: d.id,
+                            prompt: x.prompt,
+                            status: x.status,
+                            imageUrl: x.status === "published" ? x.imageUrl : null,
+                            rejectionReason: x.rejectionReason || null,
+                            createdAt: millis(x.createdAt),
+                        };
+                    })
+                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                return res.status(200).json({ items });
+            }
+
+            case "appreciation-submit": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const observation = String(body.observation || "").trim();
+                const reflection = String(body.reflection || "").trim();
+                if (!reflection) return res.status(400).json({ error: "성찰 내용을 적어 주세요." });
+                if (observation.length > 5000 || reflection.length > 5000) {
+                    return res.status(400).json({ error: "글이 너무 길어요. 조금 줄여 주세요." });
+                }
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const docRef = await db.collection(`classes/${classId}/sessions/${sessionId}/appreciations`).add({
+                    studentId: studentIdOf(studentNo),
+                    studentName: `${studentNo}번`,
+                    observation,
+                    reflection,
+                    createdAt: FieldValue.serverTimestamp(),
+                });
+                return res.status(200).json({ id: docRef.id });
             }
 
             default:

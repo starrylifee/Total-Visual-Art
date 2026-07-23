@@ -42,9 +42,9 @@ const TeacherDashboard = () => {
 
     const [classes, setClasses] = useState([]);
     const [newClassName, setNewClassName] = useState('');
+    const [newClassStudentCount, setNewClassStudentCount] = useState(30);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedClass, setSelectedClass] = useState(null);
-    const [pendingStudents, setPendingStudents] = useState([]);
     const [sessions, setSessions] = useState([]);
     const [showSessionModal, setShowSessionModal] = useState(false);
     const [newSessionData, setNewSessionData] = useState({
@@ -55,7 +55,6 @@ const TeacherDashboard = () => {
     const [isLoadingClassDetail, setIsLoadingClassDetail] = useState(false);
     const [isCreatingClass, setIsCreatingClass] = useState(false);
     const [isCreatingSession, setIsCreatingSession] = useState(false);
-    const [approvingStudentId, setApprovingStudentId] = useState(null);
 
     // Badge State
     const [activeTab, setActiveTab] = useState('classes');
@@ -103,9 +102,11 @@ const TeacherDashboard = () => {
         if (!newClassName.trim() || isCreatingClass) return;
         setIsCreatingClass(true);
         try {
-            await classService.createClass(currentUser.uid, newClassName.trim());
+            const count = Math.min(40, Math.max(1, Number(newClassStudentCount) || 30));
+            await classService.createClass(currentUser.uid, newClassName.trim(), count);
             setShowCreateModal(false);
             setNewClassName('');
+            setNewClassStudentCount(30);
             await fetchClasses();
             showToast("✅ 학급이 생성되었습니다!", "success");
         } catch (error) {
@@ -121,42 +122,14 @@ const TeacherDashboard = () => {
         setShowPasswordPanel(false);
         setRegisteredStudents([]);
         try {
-            if (cls.pendingStudents && cls.pendingStudents.length > 0) {
-                const students = await classService.getPendingStudents(cls.pendingStudents);
-                setPendingStudents(students);
-            } else {
-                setPendingStudents([]);
-            }
             const classSessions = await sessionService.getClassSessions(cls.id);
             setSessions(classSessions);
         } catch (error) {
             console.error('Failed to load class detail:', error);
-            setPendingStudents([]);
             setSessions([]);
             showToast("학급 상세 정보를 불러오지 못했습니다.", "error");
         } finally {
             setIsLoadingClassDetail(false);
-        }
-    };
-
-    const handleApprove = async (studentId) => {
-        if (!selectedClass || approvingStudentId) return;
-
-        setApprovingStudentId(studentId);
-        try {
-            await classService.approveStudent(selectedClass.id, studentId);
-            const updatedClasses = await classService.getTeacherClasses(currentUser.uid);
-            const updatedSelected = updatedClasses.find(c => c.id === selectedClass.id);
-            setClasses(updatedClasses);
-            if (updatedSelected) {
-                await handleSelectClass(updatedSelected);
-            }
-            showToast("✅ 학생 승인됨!", "success");
-        } catch (error) {
-            console.error('Failed to approve student:', error);
-            showToast("학생 승인에 실패했습니다.", "error");
-        } finally {
-            setApprovingStudentId(null);
         }
     };
 
@@ -340,8 +313,18 @@ const TeacherDashboard = () => {
                             value={newClassName}
                             onChange={(e) => setNewClassName(e.target.value)}
                             placeholder="예: 4학년 1반 미술"
-                            style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', borderRadius: '0.5rem', border: '1px solid #ddd' }}
+                            style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }}
                         />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-sub)' }}>
+                            학생 수 (출석번호 범위)
+                            <input
+                                type="number" min="1" max="40"
+                                value={newClassStudentCount}
+                                onChange={(e) => setNewClassStudentCount(e.target.value)}
+                                style={{ width: '80px', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid #ddd' }}
+                            />
+                            명
+                        </label>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                             <button onClick={() => setShowCreateModal(false)} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: '1px solid #ddd', background: 'white', cursor: 'pointer' }}>취소</button>
                             <button onClick={handleCreateClass} disabled={isCreatingClass || !newClassName.trim()} style={{ padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', background: 'var(--primary)', color: 'white', cursor: isCreatingClass || !newClassName.trim() ? 'not-allowed' : 'pointer', opacity: isCreatingClass || !newClassName.trim() ? 0.6 : 1 }}> {isCreatingClass ? '생성 중...' : '만들기'}</button>
@@ -418,12 +401,8 @@ const TeacherDashboard = () => {
                                         background: 'var(--card-bg)', boxShadow: 'var(--shadow)', transition: 'all 0.2s'
                                     }}>
                                         <h3 style={{ margin: 0, color: 'var(--text-main)' }}>{cls.name}</h3>
-                                        <p style={{ margin: '0.5rem 0', fontSize: '0.9rem', color: 'var(--text-sub)' }}>
-                                            초대 코드: <strong style={{ color: 'var(--primary)' }}>{cls.inviteCode}</strong>
-                                        </p>
-                                        <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-sub)' }}>
-                                            <span><Users size={14} /> {cls.students?.length || 0}명</span>
-                                            {cls.pendingStudents?.length > 0 && <span style={{ color: 'var(--accent)' }}>⏳ {cls.pendingStudents.length}명 대기</span>}
+                                        <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-sub)', marginTop: '0.5rem' }}>
+                                            <span><Users size={14} /> {cls.studentCount || 30}명</span>
                                         </div>
                                     </div>
                                 ))}
@@ -440,20 +419,6 @@ const TeacherDashboard = () => {
                                     <p style={{ color: 'var(--text-sub)' }}>학급 상세 정보를 불러오는 중...</p>
                                 ) : (
                                 <>
-                                <div style={{ marginBottom: '2rem' }}>
-                                    <h3 style={{ color: 'var(--text-main)' }}>⏳ 승인 대기</h3>
-                                    {pendingStudents.length === 0 ? <p style={{ color: 'var(--text-sub)' }}>대기 중인 학생이 없습니다.</p> : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                            {pendingStudents.map(s => (
-                                                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#fff9f0', borderRadius: '0.5rem' }}>
-                                                    <span>{s.displayName || s.email}</span>
-                                                    <button onClick={() => handleApprove(s.id)} disabled={approvingStudentId === s.id} style={{ padding: '0.25rem 0.75rem', borderRadius: '1rem', border: 'none', background: 'var(--accent)', color: 'white', cursor: approvingStudentId === s.id ? 'not-allowed' : 'pointer', fontWeight: '500', opacity: approvingStudentId === s.id ? 0.6 : 1 }}>{approvingStudentId === s.id ? '승인 중...' : '승인'}</button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
                                 <div style={{ marginBottom: '2rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                                         <h3 style={{ color: 'var(--text-main)', margin: 0 }}>🔑 학생 비밀번호 관리</h3>

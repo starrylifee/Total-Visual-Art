@@ -79,10 +79,10 @@ classes/{classId}                   # teacherId, 학급명
 - [x] AI 호출 서버리스 이전: `api/ai.js`(Gemini) + `api/ground.js`(그라운드) 생성, 클라이언트에서 API 키 완전 제거, 배포 번들 키 노출 없음 검증 완료. 모델도 최신화(gemini-2.5-flash / 2.5-flash-image). 작품 사진 전송·생성 이미지 저장 시 1024px 압축 적용
 - [x] 학생 접속 체계 교체: 활동코드 + 출석번호 + 비밀번호(최초 설정/재입장 확인/교사 초기화) — `/join` 입장 UI + `api/student.js`(lookup/join/me) + 교사 대시보드 코드 발급·비밀번호 초기화
 - [x] 학생용 세션 토큰 검증 구조 (서버리스에서 확인) — HMAC 서명 토큰 10시간, `verifyStudentToken` 헬퍼(`api/_lib.js`)를 이후 데이터 API가 공용 사용
-- [ ] Firestore 규칙 재작성 (교사 직접 접근 + 학생은 API 경유만)
-- [ ] 교사 대시보드 개편: 활동 생성 시 모듈 선택 UI + 활동코드 표시
-- [ ] 기존 기능(감상 루프·승인 큐·챗봇) 새 접속 체계에서 동작 확인
-- [ ] 커밋 + 푸시 + 배포 확인
+- [x] Firestore 규칙 재작성 (교사 직접 접근 + 학생은 API 경유만) — 학생 직접 접근 조항 전부 제거, 교사=자기 학급만
+- [x] 교사 대시보드 개편: 활동 생성 시 모듈 선택 UI + 활동코드 표시 + 학급 학생 수(출석번호 범위) 설정
+- [x] 기존 기능(감상 루프·승인 큐·챗봇) 새 접속 체계에서 동작 확인 — `StudentWorkspace.jsx`(토큰 기반, 큐는 10초 폴링) + `api/student.js` 데이터 액션(queue-submit/queue-list/appreciation-submit) + `/api/ai` 인증 필수화(이미지 생성은 교사만)
+- [x] 커밋 + 푸시 + 배포 확인
 
 ### 2주차 — 감상 계열 모듈
 - [ ] 명화 16종 DB 구축 (저작권 만료작, 메타데이터: 작가·조형 요소·감상 포인트)
@@ -134,6 +134,17 @@ classes/{classId}                   # teacherId, 학급명
   - 검증: 로컬 13개 시나리오 + 운영(Vercel) 실 API 입장 흐름 통과. firestore.rules 배포 완료
   - 학생 입장 후 화면(`/student/session`)은 아직 게이트만 — 기존 활동 기능 연결은 다음 단계
 - **다음 작업**: 1주차 ⑤~⑦ — Firestore 규칙 전면 재작성(학생 직접 접근 제거), 교사 대시보드 모듈 선택 UI, 기존 기능(감상 루프·승인 큐·챗봇)을 학생 토큰 기반 API로 연결(SessionWorkspace 개편)
+
+### 2026-07-24
+- 1주차 ⑤~⑦ 완료 (1주차 전체 마감):
+  - Firestore 규칙 전면 재작성: 학생 직접 접근 조항(students/pendingStudents 멤버십, 학생의 큐·감상 직접 쓰기) 전부 제거. 교사는 자기 학급(teacherId 일치)만 읽기·쓰기, 학생 데이터는 서버리스 API(Admin SDK)만 대행
+  - `/api/ai` 인증 필수화: 학생 토큰 또는 교사 ID 토큰 없으면 401 (무단 호출로 무료 한도 소모 방지). 이미지 생성 action은 교사 전용(승인 큐 구조상 교사 화면에서 실행됨) — `authenticateRequest`(`api/_lib.js`), 클라이언트는 `apiAuth.js`의 `authHeaders()`로 헤더 부착
+  - `api/student.js`에 데이터 액션 추가: queue-submit(승인 요청, 1000자 제한), queue-list(내 요청만), appreciation-submit(감상 저장, 5000자 제한). 토큰 검증 + 세션 열림 확인(`requireStudent`). 학생 식별자는 `sno_{출석번호}`
+  - 학생 화면 `StudentWorkspace.jsx` 신설: 감상 루프(4단계)·AI 그림(승인 큐)·작품 분석·표현 도우미·챗봇을 features 플래그로 탭 구성. 실시간 구독 대신 10초 폴링 + 수동 새로고침(학생은 Firestore 직접 구독 불가)
+  - 구 접속 체계 잔재 제거: `StudentDashboard.jsx` 삭제, classService의 초대코드·승인 함수 삭제, 로그인 화면 교사 전용화(학생 카드는 /join 링크)
+  - 학급 생성 시 학생 수(출석번호 범위 1~40) 입력 추가
+- 주의: **firestore.rules는 파일만 갱신됨 — `firebase deploy --only firestore:rules` 배포는 사용자 확인 필요** (권한 정책상 자동 실행 차단됨)
+- **다음 작업**: 2주차 — 명화 16종 DB 구축부터 (모듈 1·2: 루브릭 공동 설정, 1차 감상→AI 비계→2차 감상, 복원 챌린지)
 
 ## 6. 비용·제약 메모
 

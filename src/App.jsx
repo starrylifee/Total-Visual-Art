@@ -5,7 +5,6 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import TeacherDashboard from './pages/TeacherDashboard';
-import StudentDashboard from './pages/StudentDashboard';
 import SessionWorkspace from './pages/SessionWorkspace';
 import StudentJoin from './pages/StudentJoin';
 import StudentSession from './pages/StudentSession';
@@ -23,20 +22,18 @@ const ProtectedRoute = ({ children }) => {
 const DashboardRedirect = () => {
   const { userRole } = useAuth();
 
-  // Debug - check console for role
-  console.log("Current userRole:", userRole);
-
-  // Show loading if role not yet determined
   if (userRole === null) {
     return <div style={{ textAlign: 'center', padding: '3rem' }}>⏳ 로딩 중...</div>;
   }
 
   if (userRole === 'teacher') return <TeacherDashboard />;
-  return <StudentDashboard />;
+  // 학생은 구글 로그인 없이 활동코드로 입장한다
+  return <Navigate to="/join" replace />;
 };
 
+// 세션 워크스페이스는 교사 전용 (학생은 /student/session 에서 토큰으로 접근)
 const SessionAccessRoute = ({ children }) => {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser } = useAuth();
   const { classId, sessionId } = useParams();
   const [accessState, setAccessState] = useState('loading');
 
@@ -50,27 +47,8 @@ const SessionAccessRoute = ({ children }) => {
       }
 
       try {
-        const [classSnap, sessionSnap] = await Promise.all([
-          getDoc(doc(db, 'classes', classId)),
-          getDoc(doc(db, 'classes', classId, 'sessions', sessionId))
-        ]);
-
-        if (!classSnap.exists() || !sessionSnap.exists()) {
-          if (isMounted) setAccessState('denied');
-          return;
-        }
-
-        const classData = classSnap.data();
-        const sessionData = sessionSnap.data();
-        const students = Array.isArray(classData.students) ? classData.students : [];
-        const isTeacherAllowed = classData.teacherId === currentUser.uid;
-        const isStudentAllowed = students.includes(currentUser.uid)
-          && sessionData.isActive !== false
-          && sessionData.status !== 'archived';
-        const allowed = userRole === 'teacher'
-          ? isTeacherAllowed
-          : isStudentAllowed;
-
+        const classSnap = await getDoc(doc(db, 'classes', classId));
+        const allowed = classSnap.exists() && classSnap.data().teacherId === currentUser.uid;
         if (isMounted) setAccessState(allowed ? 'allowed' : 'denied');
       } catch (error) {
         console.error('Error checking session access:', error);
@@ -83,7 +61,7 @@ const SessionAccessRoute = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, [classId, currentUser, sessionId, userRole]);
+  }, [classId, currentUser, sessionId]);
 
   if (!currentUser) return <Navigate to="/login" replace />;
 
