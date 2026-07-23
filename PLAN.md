@@ -143,6 +143,8 @@ classes/{classId}                   # teacherId, 학급명
   - 학생 화면 `StudentWorkspace.jsx` 신설: 감상 루프(4단계)·AI 그림(승인 큐)·작품 분석·표현 도우미·챗봇을 features 플래그로 탭 구성. 실시간 구독 대신 10초 폴링 + 수동 새로고침(학생은 Firestore 직접 구독 불가)
   - 구 접속 체계 잔재 제거: `StudentDashboard.jsx` 삭제, classService의 초대코드·승인 함수 삭제, 로그인 화면 교사 전용화(학생 카드는 /join 링크)
   - 학급 생성 시 학생 수(출석번호 범위 1~40) 입력 추가
+- 배포 사고와 해결: `/api/ai`에 `api/_lib.js`를 연결하자 firebase-admin/auth → jwks-rsa가 ESM 전용 jose를 require 하다 Vercel 런타임에서 전 함수 크래시(FUNCTION_INVOCATION_FAILED). 교사 ID 토큰 검증을 Identity Toolkit REST(`accounts:lookup`)로 교체해 firebase-admin/auth 의존 제거로 해결. 로컬 Node 22.22에서는 require(ESM)이 허용돼 재현 안 됐음 — **api/ 수정 후에는 운영 URL 실호출 확인 필수**
+- 운영 E2E 검증 11/11 통과: lookup→join(비번 설정/오류 거부)→me→queue-submit→queue-list→appreciation-submit, 위조 토큰 401, 닫힌 활동 403, 학생 토큰 AI refine 200, 학생의 image 생성 403
 - 주의: **firestore.rules는 파일만 갱신됨 — `firebase deploy --only firestore:rules` 배포는 사용자 확인 필요** (권한 정책상 자동 실행 차단됨)
 - **다음 작업**: 2주차 — 명화 16종 DB 구축부터 (모듈 1·2: 루브릭 공동 설정, 1차 감상→AI 비계→2차 감상, 복원 챌린지)
 
