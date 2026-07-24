@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, themes } from '../context/ThemeContext';
@@ -153,6 +153,7 @@ const TeacherDashboard = () => {
         setSlideshowSession(null);
         setClassArtworks([]);
         setSessionOutputs(null);
+        outputsReqRef.current = null;
         setGalleryPick(null);
         try {
             const classSessions = await sessionService.getClassSessions(cls.id);
@@ -278,6 +279,7 @@ const TeacherDashboard = () => {
             setClassArtworks(artworks);
             setSlideshowSession(sessions.find(s => s.id === sessionId));
             setSessionOutputs(null); // 활동을 바꾸면 산출물 다시 로드
+            outputsReqRef.current = null;
             setGalleryPick(null);
         } catch (e) {
             console.error("Failed to load artworks", e);
@@ -286,24 +288,28 @@ const TeacherDashboard = () => {
     };
 
     // 3D 갤러리·PDF 모드에서 산출물이 없으면 자동 로드 (활동을 바꾸면 sessionOutputs가 null로 초기화됨)
+    // 진행 중 요청은 ref로 표시 — 상태를 deps에 넣으면 effect가 자기 setState로 재실행되며 스스로 취소하는 버그가 생긴다
+    const outputsReqRef = useRef(null);
     useEffect(() => {
         if (presentMode !== 'gallery3d' && presentMode !== 'pdf') return;
-        if (!selectedClass || !slideshowSession || sessionOutputs || isLoadingOutputs) return;
-        let cancelled = false;
-        (async () => {
-            setIsLoadingOutputs(true);
-            try {
-                const outputs = await loadSessionOutputs(selectedClass.id, slideshowSession.id);
-                if (!cancelled) setSessionOutputs(outputs);
-            } catch (e) {
+        if (!selectedClass || !slideshowSession || sessionOutputs) return;
+        if (outputsReqRef.current === slideshowSession.id) return; // 같은 활동 요청이 이미 진행 중
+        const reqId = slideshowSession.id;
+        outputsReqRef.current = reqId;
+        setIsLoadingOutputs(true);
+        loadSessionOutputs(selectedClass.id, reqId)
+            .then((outputs) => {
+                if (outputsReqRef.current === reqId) setSessionOutputs(outputs);
+            })
+            .catch((e) => {
                 console.error('Failed to load session outputs', e);
-                if (!cancelled) showToast('산출물을 불러오지 못했습니다.', 'error');
-            } finally {
-                if (!cancelled) setIsLoadingOutputs(false);
-            }
-        })();
-        return () => { cancelled = true; };
-    }, [presentMode, selectedClass, slideshowSession, sessionOutputs, isLoadingOutputs]);
+                showToast('산출물을 불러오지 못했습니다.', 'error');
+                if (outputsReqRef.current === reqId) outputsReqRef.current = null; // 재시도 허용
+            })
+            .finally(() => {
+                if (outputsReqRef.current === reqId || outputsReqRef.current === null) setIsLoadingOutputs(false);
+            });
+    }, [presentMode, selectedClass, slideshowSession, sessionOutputs]);
 
     const handlePresentMode = (mode) => setPresentMode(mode);
 
