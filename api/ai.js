@@ -170,8 +170,10 @@ JSON 배열로만 답하세요. 예: ["질문1?", "질문2?", "질문3?"]`;
                     return res.status(400).json({ error: "아직 공개된 작품이 없어요. 선생님 승인을 기다려 주세요." });
                 }
 
-                // 원본 다운로드 (축소판이면 그대로, 아니면 원본) → base64
-                const origResp = await fetch(referenceImageUrl);
+                // 원본 다운로드 → base64. 위키미디어는 식별 가능한 User-Agent가 없으면 거부한다
+                const origResp = await fetch(referenceImageUrl, {
+                    headers: { "User-Agent": "TotalVisualArt/1.0 (Korean elementary art education app; forinnocen@gmail.com)" },
+                });
                 if (!origResp.ok) return res.status(502).json({ error: "원본 작품 이미지를 불러오지 못했어요." });
                 const origMime = origResp.headers.get("content-type") || "image/jpeg";
                 const origB64 = Buffer.from(await origResp.arrayBuffer()).toString("base64");
