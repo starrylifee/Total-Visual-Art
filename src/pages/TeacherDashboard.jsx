@@ -8,6 +8,7 @@ import { badgeService } from '../services/badgeService';
 import { imageGenService } from '../services/imageGenService';
 import ClassSlideshow from '../components/ClassSlideshow';
 import { loadSessionOutputs } from '../services/portfolioService';
+import { EXTERNAL_LINKS } from '../data/externalLinks';
 
 // three.js가 무거워서 3D 갤러리를 열 때만 내려받는다 (학생 화면 번들 보호)
 const Gallery3D = lazy(() => import('../components/Gallery3D'));
@@ -580,6 +581,35 @@ const TeacherDashboard = () => {
                                 ))}
                             </div>
                         )}
+
+                        {/* 외부 도구 링크 */}
+                        <div style={{ marginTop: '1.5rem', padding: '1rem', borderRadius: '1rem', background: 'var(--card-bg)', boxShadow: 'var(--shadow)' }}>
+                            <h3 style={{ margin: '0 0 0.75rem', color: 'var(--text-main)', fontSize: '1rem' }}>🔗 외부 도구</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {Object.values(EXTERNAL_LINKS).map(link => (
+                                    <a
+                                        key={link.url}
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.75rem',
+                                            borderRadius: '0.6rem', border: '1px solid #e2e8f0', background: '#f8fafc',
+                                            textDecoration: 'none', color: 'var(--text-main)'
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '1.2rem' }}>{link.emoji}</span>
+                                        <span style={{ flex: 1 }}>
+                                            <strong style={{ fontSize: '0.9rem', display: 'block' }}>{link.label}</strong>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>{link.desc}</span>
+                                        </span>
+                                        {link.audience === 'teacher' && (
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#b45309', background: '#fef3c7', padding: '0.15rem 0.5rem', borderRadius: '999px' }}>교사 전용</span>
+                                        )}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <div style={{ flex: '2 1 400px', minWidth: '300px', background: 'var(--card-bg)', borderRadius: '1rem', padding: '1.5rem', boxShadow: 'var(--shadow)' }}>

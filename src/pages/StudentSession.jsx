@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentAuthService } from '../services/studentAuthService';
 import StudentWorkspace from '../components/StudentWorkspace';
+import { EXTERNAL_LINKS } from '../data/externalLinks';
 import { LogOut } from 'lucide-react';
 
 // 학생 활동 화면 (토큰 기반)
@@ -41,9 +42,19 @@ const StudentSession = () => {
                     <h1 style={{ margin: 0, fontSize: '1.6rem' }}>📚 {info.sessionTitle}</h1>
                     <p style={{ margin: '0.4rem 0 0', opacity: 0.9 }}>{info.className} · {info.studentNo}번</p>
                 </div>
-                <button onClick={handleLeave} style={{ padding: '0.6rem 1.2rem', borderRadius: '2rem', border: 'none', background: 'rgba(255,255,255,0.25)', color: 'white', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-                    <LogOut size={16} /> 나가기
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <a
+                        href={EXTERNAL_LINKS.unicorn.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ padding: '0.6rem 1.2rem', borderRadius: '2rem', background: 'rgba(255,255,255,0.25)', color: 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}
+                    >
+                        {EXTERNAL_LINKS.unicorn.emoji} {EXTERNAL_LINKS.unicorn.label}
+                    </a>
+                    <button onClick={handleLeave} style={{ padding: '0.6rem 1.2rem', borderRadius: '2rem', border: 'none', background: 'rgba(255,255,255,0.25)', color: 'white', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+                        <LogOut size={16} /> 나가기
+                    </button>
+                </div>
             </header>
             <StudentWorkspace session={info} />
         </div>
