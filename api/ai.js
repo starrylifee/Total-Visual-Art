@@ -11,6 +11,7 @@
  *  { action: "feldman",  firstText, secondText, rubric }            -> { level, reason }     (모듈1 초벌 판정, 교사 전용)
  *  { action: "compare",  queueId }                                  -> { differences, praise } (모듈2 원본 vs 생성 비교, 학생 토큰)
  *  { action: "video-coach", observation, prompt, portraitName }     -> { good, tips } (모듈3 영상 프롬프트 비계)
+ *  { action: "storyboard-polish", cuts, appreciation }               -> { prompt, tip } (모듈4 스토리보드 → 영상 프롬프트 다듬기)
  */
 import { GoogleGenAI } from "@google/genai";
 import { authenticateRequest, adminDb } from "./_lib.js";
@@ -260,6 +261,45 @@ JSON으로만 답하세요: {"good": "...", "tips": ["...?", "...?"]}`;
                     return res.status(200).json({ good: String(parsed.good || "").slice(0, 300), tips });
                 } catch {
                     return res.status(500).json({ error: "코멘트를 만들지 못했어요. 다시 시도해 주세요." });
+                }
+            }
+
+            // 모듈 4: 3~4컷 스토리보드를 하나의 영상 프롬프트로 다듬기 (내용은 학생 컷 그대로)
+            case "storyboard-polish": {
+                const cuts = (Array.isArray(body.cuts) ? body.cuts : []).map((c) => String(c).trim()).filter(Boolean);
+                if (cuts.length < 3) {
+                    return res.status(400).json({ error: "스토리보드 컷을 3개 이상 채워 주세요." });
+                }
+                const polishPrompt = `당신은 초등학생의 영상 만들기 수업을 돕는 선생님입니다.
+학생이 친구의 작품을 감상하고, 그 작품으로 짧은 영상을 만들기 위한 스토리보드를 짰습니다.
+컷들을 이어서 영상 생성 AI에게 줄 하나의 영상 설명(프롬프트)으로 다듬어 주세요.
+
+[학생의 작품 감상]
+"${String(body.appreciation || "").slice(0, 500)}"
+
+[스토리보드]
+${cuts.slice(0, 4).map((c, i) => `컷 ${i + 1}: ${c}`).join("\n")}
+
+[다듬기 규칙]
+- 학생이 쓴 장면 내용을 그대로 살리세요. 새 장면을 지어내거나 순서를 바꾸지 마세요.
+- 장면 전환이 자연스럽게 이어지도록 문장을 연결하고, 카메라 움직임 표현(예: 천천히 가까이, 옆으로 이동)을 한두 곳에 보태세요.
+- 4~6문장의 한국어. prompt에는 다듬어진 영상 설명만 쓰세요.
+- tip: 학생이 스스로 더 고칠 수 있는 단서 질문 1가지. 한 문장.
+
+JSON으로만 답하세요: {"prompt": "...", "tip": "...?"}`;
+
+                const response = await ai.models.generateContent({
+                    model: TEXT_MODEL,
+                    contents: polishPrompt,
+                    config: { responseMimeType: "application/json" },
+                });
+                try {
+                    const parsed = JSON.parse(response.text);
+                    const polished = String(parsed.prompt || "").trim();
+                    if (!polished) throw new Error("empty");
+                    return res.status(200).json({ prompt: polished.slice(0, 2000), tip: String(parsed.tip || "").slice(0, 300) });
+                } catch {
+                    return res.status(500).json({ error: "다듬기에 실패했어요. 다시 시도해 주세요." });
                 }
             }
 

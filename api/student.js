@@ -17,6 +17,9 @@
  *  { action: "restore-get",  token }                                 -> 내 복원 챌린지 불러오기
  *  { action: "portrait-save", token, patch }                         -> 인물의 하루 진행 저장(모듈3)
  *  { action: "portrait-get",  token }                                -> 내 인물의 하루 불러오기(영상 URL 포함)
+ *  { action: "gallery-list", token }                                 -> 이 활동의 공개 작품 갤러리(모듈4, 최신 30개)
+ *  { action: "storyboard-save", token, patch }                       -> 스토리보드 진행 저장(모듈4)
+ *  { action: "storyboard-get",  token }                              -> 내 스토리보드 불러오기
  */
 import { adminDb, signStudentToken, verifyStudentToken, hashPassword, makeSalt } from "./_lib.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -387,6 +390,86 @@ export default async function handler(req, res) {
                         clothes: x.clothes || "",
                         prompt: x.prompt || "",
                         aiComment: x.aiComment || "",
+                        status: x.status || "",
+                        videoUrl: x.videoUrl || "",
+                    },
+                });
+            }
+
+            // 모듈 4: 이 활동에서 공개된 작품 갤러리 (친구 작품 선택용). 이름 대신 출석번호만 노출
+            case "gallery-list": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId } = r.auth;
+                const snap = await db.collection(`classes/${classId}/sessions/${sessionId}/generationQueue`)
+                    .where("status", "==", "published")
+                    .get();
+                const items = snap.docs
+                    .map((d) => {
+                        const x = d.data();
+                        return {
+                            id: d.id,
+                            studentName: x.studentName || "",
+                            imageUrl: x.imageUrl || null,
+                            createdAt: millis(x.createdAt),
+                        };
+                    })
+                    .filter((x) => x.imageUrl)
+                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+                    .slice(0, 30);
+                return res.status(200).json({ items });
+            }
+
+            // 모듈 4: 스토리보드 (친구 작품 감상 → 3~4컷 → 영상 프롬프트).
+            // 문서 id는 {sno}_sb — 오퍼레이터 보드(videoPrompts 컬렉션)가 그대로 읽는다
+            case "storyboard-save": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const src = body.patch || {};
+                const patch = {};
+                for (const key of ["chosenQueueId", "appreciation", "prompt"]) {
+                    if (src[key] !== undefined) {
+                        const v = String(src[key]).trim();
+                        if (v.length > 3000) return res.status(400).json({ error: "글이 너무 길어요. 조금 줄여 주세요." });
+                        patch[key] = v;
+                    }
+                }
+                if (src.cuts !== undefined) {
+                    if (!Array.isArray(src.cuts) || src.cuts.length < 3 || src.cuts.length > 4) {
+                        return res.status(400).json({ error: "스토리보드는 3~4컷이어야 해요." });
+                    }
+                    patch.cuts = src.cuts.map((c) => String(c).slice(0, 500));
+                }
+                if (src.submitted === true) patch.status = "submitted";
+                if (!Object.keys(patch).length) return res.status(400).json({ error: "저장할 내용이 없습니다." });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                await db.doc(`classes/${classId}/sessions/${sessionId}/videoPrompts/${studentIdOf(studentNo)}_sb`).set({
+                    studentId: studentIdOf(studentNo),
+                    studentName: `${studentNo}번`,
+                    kind: "storyboard",
+                    ...patch,
+                    updatedAt: FieldValue.serverTimestamp(),
+                }, { merge: true });
+                return res.status(200).json({ ok: true });
+            }
+
+            case "storyboard-get": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const snap = await db.doc(`classes/${classId}/sessions/${sessionId}/videoPrompts/${studentIdOf(studentNo)}_sb`).get();
+                if (!snap.exists) return res.status(200).json({ data: null });
+                const x = snap.data();
+                return res.status(200).json({
+                    data: {
+                        chosenQueueId: x.chosenQueueId || "",
+                        appreciation: x.appreciation || "",
+                        cuts: x.cuts || [],
+                        prompt: x.prompt || "",
                         status: x.status || "",
                         videoUrl: x.videoUrl || "",
                     },

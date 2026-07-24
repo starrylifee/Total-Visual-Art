@@ -76,6 +76,12 @@ export const geminiService = {
         return data; // { good, tips: [..2] }
     },
 
+    // 모듈 4: 스토리보드 컷들을 하나의 영상 프롬프트로 다듬기
+    polishStoryboard: async (cuts, appreciation) => {
+        const data = await callAI({ action: "storyboard-polish", cuts, appreciation });
+        return data; // { prompt, tip }
+    },
+
     // Chatbot (Multi-turn)
     chatWithPersona: async (history, message, systemInstruction) => {
         try {

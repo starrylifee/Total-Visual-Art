@@ -56,7 +56,7 @@ const TeacherDashboard = () => {
         title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '',
         masterpieceId: null,
         portraitImageUrl: '', portraitName: '', portraitDesc: '',
-        features: { deepAppreciation: true, vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true, portrait: false }
+        features: { deepAppreciation: true, vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true, portrait: false, storyboard: false }
     };
     const [newSessionData, setNewSessionData] = useState(emptySessionData);
     // 루브릭 편집 대상 세션 (모듈 1: 감상 루브릭 공동 설정)
@@ -377,6 +377,9 @@ const TeacherDashboard = () => {
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
                                 <input type="checkbox" checked={newSessionData.features?.portrait} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, portrait: e.target.checked } })} /> 인물의 하루(영상)
                             </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
+                                <input type="checkbox" checked={newSessionData.features?.storyboard} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, storyboard: e.target.checked } })} /> 스토리보드(영상)
+                            </label>
                         </div>
 
                         <input value={newSessionData.title} onChange={e => setNewSessionData({ ...newSessionData, title: e.target.value })} placeholder="활동 제목 (예: 반 고흐 감상)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
@@ -577,7 +580,7 @@ const TeacherDashboard = () => {
                                                                     📊 감상 현황
                                                                 </button>
                                                             )}
-                                                            {sess.features?.portrait && (
+                                                            {(sess.features?.portrait || sess.features?.storyboard) && (
                                                                 <button
                                                                     onClick={() => setOperatorSession(sess)}
                                                                     style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #0891b2', background: 'white', color: '#0891b2', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}

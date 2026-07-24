@@ -106,6 +106,9 @@ const OperatorBoard = ({ classId, session, onClose }) => {
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
                                     <strong style={{ fontSize: '1.05rem' }}>{item.studentName}</strong>
+                                    <span style={{ fontSize: '0.78rem', padding: '0.12rem 0.55rem', borderRadius: '1rem', background: '#e0e7ff', color: '#4338ca', fontWeight: 600 }}>
+                                        {item.kind === 'storyboard' ? '🎞️ 스토리보드' : '🎬 인물의 하루'}
+                                    </span>
                                     <span style={{
                                         fontSize: '0.8rem', fontWeight: 700, padding: '0.15rem 0.6rem', borderRadius: '1rem',
                                         background: item.videoUrl ? '#d1fae5' : item.status === 'submitted' ? '#fef3c7' : '#e2e8f0',

@@ -89,6 +89,20 @@ export const studentAuthService = {
         return data.data;
     },
 
+    // 모듈 4: 공개 작품 갤러리 + 스토리보드 진행 저장/복원
+    listGallery: async () => {
+        const data = await call({ action: "gallery-list", token: localStorage.getItem(TOKEN_KEY) });
+        return data.items || [];
+    },
+
+    saveStoryboard: (patch) =>
+        call({ action: "storyboard-save", token: localStorage.getItem(TOKEN_KEY), patch }),
+
+    getStoryboard: async () => {
+        const data = await call({ action: "storyboard-get", token: localStorage.getItem(TOKEN_KEY) });
+        return data.data;
+    },
+
     getInfo: () => {
         try {
             return JSON.parse(localStorage.getItem(INFO_KEY));
