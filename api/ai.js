@@ -13,6 +13,7 @@
  *  { action: "video-coach", observation, prompt, portraitName }     -> { good, tips } (모듈3 영상 프롬프트 비계)
  *  { action: "storyboard-polish", cuts, appreciation }               -> { prompt, tip } (모듈4 스토리보드 → 영상 프롬프트 다듬기)
  *  { action: "artwork-review", image, artRubric }                    -> { items, overall } (모듈5 작품 루브릭 초벌 채점)
+ *  { action: "assess", questions, answers }                          -> { items: [{score, reason}] } (모듈6 서술형 초벌 채점, 교사 전용)
  */
 import { GoogleGenAI } from "@google/genai";
 import { authenticateRequest, adminDb } from "./_lib.js";
@@ -403,6 +404,62 @@ JSON으로만 답하세요: {"level": 1~4의 정수, "reason": "판정 근거"}`
                     return res.status(200).json({ level, reason: String(parsed.reason || "").slice(0, 500) });
                 } catch {
                     return res.status(500).json({ error: "판정 결과를 해석하지 못했어요. 다시 시도해 주세요." });
+                }
+            }
+
+            // 모듈 6: 연구 평가 서술형 초벌 채점 (교사 전용 — 교사가 최종 확정)
+            // 한 학생의 5문항을 한 번의 호출로 채점해 무료 한도를 아낀다
+            case "assess": {
+                if (requester.role !== "teacher") {
+                    return res.status(403).json({ error: "채점은 선생님만 실행할 수 있어요." });
+                }
+                const questions = Array.isArray(body.questions) ? body.questions : [];
+                const answers = Array.isArray(body.answers) ? body.answers : [];
+                if (questions.length === 0) {
+                    return res.status(400).json({ error: "채점할 문항이 없습니다." });
+                }
+                const qa = questions.map((q, i) => (
+                    `[${i + 1}번 문항] ${String(q).slice(0, 500)}\n[${i + 1}번 학생 답] "${String(answers[i] || "").slice(0, 2000)}"`
+                )).join("\n\n");
+
+                const prompt = `당신은 초등학교 미술 수업 연구의 서술형 검사를 돕는 보조 채점자입니다.
+학생의 답을 문항마다 0~3점으로 채점하세요.
+
+[채점 기준]
+0점 미응답: 답을 쓰지 않았거나 질문과 관련 없는 내용
+1점 단순: 한두 낱말 수준으로만 답하고 까닭이 없음
+2점 구체: 내용을 구체적으로 썼으나 까닭·근거가 약함
+3점 근거: 구체적으로 쓰고 작품이나 경험에서 까닭을 들어 설명함
+
+[채점할 문항과 답]
+${qa}
+
+[채점 규칙]
+- 초등학생 수준을 기준으로 후하지도 박하지도 않게 매기세요.
+- 맞춤법·글씨 수가 아니라 내용의 구체성과 까닭의 유무로 판단하세요.
+- reason은 학생 답을 인용한 한 문장의 한국어로, 교사가 확정할 때 참고할 근거를 쓰세요.
+- 답이 비어 있으면 0점, reason은 "답을 쓰지 않음"으로 하세요.
+
+문항 ${questions.length}개 전부에 대해 JSON으로만 답하세요:
+{"items": [{"score": 0~3의 정수, "reason": "채점 근거"}, ...]}`;
+
+                const response = await ai.models.generateContent({
+                    model: TEXT_MODEL,
+                    contents: prompt,
+                    config: { responseMimeType: "application/json" },
+                });
+                try {
+                    const parsed = JSON.parse(response.text);
+                    const raw = Array.isArray(parsed.items) ? parsed.items : [];
+                    // 문항 수에 맞춰 정렬 (AI가 개수를 틀려도 화면이 깨지지 않게)
+                    const items = questions.map((_, i) => {
+                        const it = raw[i] || {};
+                        const score = Math.min(3, Math.max(0, parseInt(it.score, 10) || 0));
+                        return { score, reason: String(it.reason || "").slice(0, 300) };
+                    });
+                    return res.status(200).json({ items });
+                } catch {
+                    return res.status(500).json({ error: "채점 결과를 해석하지 못했어요. 다시 시도해 주세요." });
                 }
             }
 

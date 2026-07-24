@@ -71,6 +71,8 @@ function sessionInfo(r) {
         portraitName: s.portraitName || "",
         portraitDesc: s.portraitDesc || "",
         artRubric: Array.isArray(s.artRubric) ? s.artRubric : [],
+        assessmentQuestions: Array.isArray(s.assessmentQuestions) ? s.assessmentQuestions : [],
+        assessmentPhase: s.assessmentPhase === "post" ? "post" : "pre",
     };
 }
 
@@ -551,6 +553,62 @@ export default async function handler(req, res) {
                         status: x.status || "",
                     },
                 });
+            }
+
+            // 모듈 6: 연구 평가(사전·사후 서술형). 학생당 문서 1개에 pre/post를 나눠 담는다
+            // 단계(pre/post)는 교사가 세션에서 정하며 학생은 바꿀 수 없다. 제출하면 잠긴다
+            case "assessment-get": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const phase = r.sessionData.assessmentPhase === "post" ? "post" : "pre";
+                const questions = Array.isArray(r.sessionData.assessmentQuestions) ? r.sessionData.assessmentQuestions : [];
+                const snap = await db.doc(`classes/${classId}/sessions/${sessionId}/assessments/${studentIdOf(studentNo)}`).get();
+                const cur = snap.exists ? (snap.data()[phase] || {}) : {};
+                return res.status(200).json({
+                    phase,
+                    questions,
+                    answers: Array.isArray(cur.answers) ? cur.answers : [],
+                    submitted: !!cur.submittedAt,
+                });
+            }
+
+            case "assessment-save": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const phase = r.sessionData.assessmentPhase === "post" ? "post" : "pre";
+                const questions = Array.isArray(r.sessionData.assessmentQuestions) ? r.sessionData.assessmentQuestions : [];
+                if (questions.length === 0) {
+                    return res.status(400).json({ error: "검사 문항이 아직 준비되지 않았어요. 선생님께 알려 주세요." });
+                }
+
+                const docRef = db.doc(`classes/${classId}/sessions/${sessionId}/assessments/${studentIdOf(studentNo)}`);
+                const snap = await docRef.get();
+                if (snap.exists && snap.data()[phase]?.submittedAt) {
+                    return res.status(403).json({ error: "이미 제출한 검사예요. 다시 풀려면 선생님께 요청하세요." });
+                }
+
+                const answers = (Array.isArray(body.answers) ? body.answers : [])
+                    .slice(0, questions.length)
+                    .map((a) => String(a || "").trim().slice(0, 2000));
+                const submit = body.submit === true;
+                if (submit && answers.filter(Boolean).length === 0) {
+                    return res.status(400).json({ error: "한 문항이라도 답을 적어 주세요." });
+                }
+
+                const payload = { answers };
+                if (submit) payload.submittedAt = FieldValue.serverTimestamp();
+
+                await docRef.set({
+                    studentId: studentIdOf(studentNo),
+                    studentName: `${studentNo}번`,
+                    [phase]: payload,
+                    updatedAt: FieldValue.serverTimestamp(),
+                }, { merge: true });
+                return res.status(200).json({ ok: true, submitted: submit });
             }
 
             default:

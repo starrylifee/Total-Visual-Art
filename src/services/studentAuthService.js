@@ -112,6 +112,13 @@ export const studentAuthService = {
         return data.data;
     },
 
+    // 모듈 6: 연구 평가(사전·사후). 단계는 서버가 세션에서 읽어 알려 준다
+    saveAssessment: (answers, submit = false) =>
+        call({ action: "assessment-save", token: localStorage.getItem(TOKEN_KEY), answers, submit }),
+
+    getAssessment: () =>
+        call({ action: "assessment-get", token: localStorage.getItem(TOKEN_KEY) }),
+
     getInfo: () => {
         try {
             return JSON.parse(localStorage.getItem(INFO_KEY));

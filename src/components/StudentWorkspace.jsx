@@ -6,6 +6,7 @@ import RestoreChallenge from './RestoreChallenge';
 import PortraitStory from './PortraitStory';
 import StoryboardStudio from './StoryboardStudio';
 import ArtworkReview from './ArtworkReview';
+import ResearchAssessment from './ResearchAssessment';
 import { Image, MessageSquare, PenTool, Loader, Send, X, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
 const Toast = ({ message, type, onClose }) => {
@@ -29,7 +30,9 @@ const QUEUE_POLL_MS = 10000;
 // 학생 활동 화면 (토큰 기반). session = /api/student me 응답
 const StudentWorkspace = ({ session }) => {
     const features = session.features || {};
-    const firstTab = features.deepAppreciation ? 'deep'
+    // 연구 평가가 켜져 있으면 검사부터 (사전 검사를 먼저 치르게)
+    const firstTab = features.assessment ? 'assessment'
+        : features.deepAppreciation ? 'deep'
         : features.portrait ? 'portrait'
         : features.storyboard ? 'storyboard'
         : features.artReview ? 'artreview'
@@ -171,6 +174,11 @@ const StudentWorkspace = ({ session }) => {
             `}</style>
 
             <div className="workspace-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                {features.assessment && (
+                    <button className={activeTab === 'assessment' ? 'btn-primary' : 'btn-secondary'} onClick={() => setActiveTab('assessment')}>
+                        <PenTool size={16} /> 📝 검사
+                    </button>
+                )}
                 {features.deepAppreciation && (
                     <button className={activeTab === 'deep' ? 'btn-primary' : 'btn-secondary'} onClick={() => setActiveTab('deep')}>
                         <PenTool size={16} /> 🖼️ 감상 쓰기
@@ -375,6 +383,10 @@ const StudentWorkspace = ({ session }) => {
 
                 {activeTab === 'artreview' && (
                     <ArtworkReview session={session} showToast={showToast} />
+                )}
+
+                {activeTab === 'assessment' && (
+                    <ResearchAssessment session={session} showToast={showToast} />
                 )}
             </div>
         </div>

@@ -17,7 +17,9 @@ import RubricEditor from '../components/RubricEditor';
 import AppreciationMonitor from '../components/AppreciationMonitor';
 import OperatorBoard from '../components/OperatorBoard';
 import ArtReviewBoard from '../components/ArtReviewBoard';
+import AssessmentBoard from '../components/AssessmentBoard';
 import { DEFAULT_RUBRIC, DEFAULT_ART_RUBRIC } from '../data/masterpieces';
+import { DEFAULT_ASSESSMENT_QUESTIONS } from '../data/assessment';
 import { Plus, Users, Award, Palette, Play, Monitor, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -62,7 +64,7 @@ const TeacherDashboard = () => {
         title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '',
         masterpieceId: null,
         portraitImageUrl: '', portraitName: '', portraitDesc: '',
-        features: { deepAppreciation: true, vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true, portrait: false, storyboard: false, artReview: false }
+        features: { deepAppreciation: true, vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true, portrait: false, storyboard: false, artReview: false, assessment: false }
     };
     const [newSessionData, setNewSessionData] = useState(emptySessionData);
     // 루브릭 편집 대상 세션 (모듈 1: 감상 루브릭 공동 설정)
@@ -74,6 +76,9 @@ const TeacherDashboard = () => {
     // 작품 평가 확정 보드 (모듈 5) / 작품 루브릭 편집
     const [artReviewSession, setArtReviewSession] = useState(null);
     const [artRubricSession, setArtRubricSession] = useState(null);
+    // 연구 평가 (모듈 6): 문항 편집 / 응시·채점 보드
+    const [assessmentQuestionSession, setAssessmentQuestionSession] = useState(null);
+    const [assessmentSession, setAssessmentSession] = useState(null);
     const [isLoadingClasses, setIsLoadingClasses] = useState(true);
     const [isLoadingClassDetail, setIsLoadingClassDetail] = useState(false);
     const [isCreatingClass, setIsCreatingClass] = useState(false);
@@ -177,6 +182,8 @@ const TeacherDashboard = () => {
                 title: newSessionData.title.trim(),
                 rubric: DEFAULT_RUBRIC,
                 artRubric: DEFAULT_ART_RUBRIC,
+                assessmentQuestions: DEFAULT_ASSESSMENT_QUESTIONS,
+                assessmentPhase: 'pre',
                 teacherId: currentUser.uid
             });
             setShowSessionModal(false);
@@ -455,7 +462,17 @@ const TeacherDashboard = () => {
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
                                 <input type="checkbox" checked={newSessionData.features?.artReview} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, artReview: e.target.checked } })} /> 작품 평가
                             </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
+                                <input type="checkbox" checked={newSessionData.features?.assessment} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, assessment: e.target.checked } })} /> 연구 평가(사전·사후)
+                            </label>
                         </div>
+
+                        {newSessionData.features?.assessment && (
+                            <p style={{ margin: '0 0 0.75rem', padding: '0.6rem 0.8rem', background: '#eef2ff', borderRadius: '0.5rem', fontSize: '0.8rem', color: '#3730a3' }}>
+                                📝 서술형 5문항 기본 템플릿이 들어갑니다. 만든 뒤 활동 카드의 '연구 문항'에서 고칠 수 있어요.
+                                대조군 학급은 <strong>연구 평가만 체크</strong>한 활동을 만들어 활동코드를 주면 검사만 응시합니다.
+                            </p>
+                        )}
 
                         <input value={newSessionData.title} onChange={e => setNewSessionData({ ...newSessionData, title: e.target.value })} autoFocus placeholder="활동 제목 (예: 반 고흐 감상)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
 
@@ -564,6 +581,40 @@ const TeacherDashboard = () => {
                         setArtRubricSession(null);
                         setSessions(sessions.map(s => (s.id === artRubricSession.id ? { ...s, artRubric } : s)));
                         showToast('📋 작품 루브릭이 저장되었습니다!', 'success');
+                    }}
+                />
+            )}
+
+            {/* 연구 평가 문항 편집 모달 (모듈 6) */}
+            {assessmentQuestionSession && selectedClass && (
+                <RubricEditor
+                    classId={selectedClass.id}
+                    session={assessmentQuestionSession}
+                    fieldName="assessmentQuestions"
+                    titleLabel="연구 평가 문항"
+                    defaultItems={DEFAULT_ASSESSMENT_QUESTIONS}
+                    itemPlaceholder="서술형 문항을 입력하세요"
+                    showBoardMode={false}
+                    helpText="사전·사후 검사에 같은 문항이 쓰입니다. 검사를 시작한 뒤 문항을 바꾸면 사전·사후 비교가 어긋나니 주의하세요."
+                    onClose={() => setAssessmentQuestionSession(null)}
+                    onSaved={async (assessmentQuestions) => {
+                        setAssessmentQuestionSession(null);
+                        setSessions(sessions.map(s => (s.id === assessmentQuestionSession.id ? { ...s, assessmentQuestions } : s)));
+                        showToast('📝 연구 평가 문항이 저장되었습니다!', 'success');
+                    }}
+                />
+            )}
+
+            {/* 연구 평가 보드 모달 (모듈 6) */}
+            {assessmentSession && selectedClass && (
+                <AssessmentBoard
+                    classId={selectedClass.id}
+                    session={assessmentSession}
+                    studentCount={selectedClass.studentCount || 30}
+                    onClose={() => setAssessmentSession(null)}
+                    onPhaseChanged={(phase) => {
+                        setAssessmentSession({ ...assessmentSession, assessmentPhase: phase });
+                        setSessions(sessions.map(s => (s.id === assessmentSession.id ? { ...s, assessmentPhase: phase } : s)));
                     }}
                 />
             )}
@@ -740,6 +791,22 @@ const TeacherDashboard = () => {
                                                                         style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #059669', background: 'white', color: '#059669', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
                                                                     >
                                                                         🖼️ 작품 평가
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            {sess.features?.assessment && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => setAssessmentQuestionSession(sess)}
+                                                                        style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #7c3aed', background: 'white', color: '#7c3aed', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
+                                                                    >
+                                                                        📝 연구 문항{sess.assessmentQuestions?.length ? ` (${sess.assessmentQuestions.length})` : ''}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setAssessmentSession(sess)}
+                                                                        style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #4338ca', background: 'white', color: '#4338ca', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
+                                                                    >
+                                                                        📊 연구 평가 ({sess.assessmentPhase === 'post' ? '사후' : '사전'})
                                                                     </button>
                                                                 </>
                                                             )}

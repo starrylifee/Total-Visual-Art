@@ -106,6 +106,12 @@ service cloud.firestore {
           allow read, update: if isClassTeacher(classId);
           allow create, delete: if false;
         }
+
+        // 연구 평가(모듈6): 학생 응답은 서버 경유, 교사는 열람 + 채점·확정·재응시 허용(update)
+        match /assessments/{docId} {
+          allow read, update: if isClassTeacher(classId);
+          allow create, delete: if false;
+        }
       }
     }
   }

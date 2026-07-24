@@ -88,6 +88,12 @@ export const geminiService = {
         return data; // { items: [{criterion, met, comment}], overall }
     },
 
+    // 모듈 6: 연구 평가 서술형 초벌 채점 (교사 전용). 한 학생의 전 문항을 한 번에
+    scoreAssessment: async (questions, answers) => {
+        const data = await callAI({ action: "assess", questions, answers });
+        return data.items || []; // [{score, reason}]
+    },
+
     // Chatbot (Multi-turn)
     chatWithPersona: async (history, message, systemInstruction) => {
         try {

@@ -8,7 +8,13 @@ import { X, Plus, Trash2, Monitor, Save } from 'lucide-react';
  * - 교사가 초안을 만들고, 수업 중 전자칠판 모드로 띄워 학생 의견을 반영해 고친다
  * - fieldName으로 세션의 어느 루브릭 필드를 편집할지 지정한다
  */
-const RubricEditor = ({ classId, session, onSaved, onClose, fieldName = 'rubric', titleLabel = '감상 루브릭', defaultItems = DEFAULT_RUBRIC }) => {
+const RubricEditor = ({
+    classId, session, onSaved, onClose,
+    fieldName = 'rubric', titleLabel = '감상 루브릭', defaultItems = DEFAULT_RUBRIC,
+    itemPlaceholder = '감상 기준을 입력하세요',
+    showBoardMode = true, // 연구 평가 문항처럼 학생과 함께 고치지 않는 목록은 끈다
+    helpText = "교사가 초안을 만들고, 수업 시간에 칠판 모드로 띄워 학생 의견을 반영해 함께 완성하세요. 저장하면 학생 감상 화면에 '우리 반 감상 약속'으로 보입니다.",
+}) => {
     const [items, setItems] = useState(
         session[fieldName]?.length ? [...session[fieldName]] : [...defaultItems]
     );
@@ -23,7 +29,7 @@ const RubricEditor = ({ classId, session, onSaved, onClose, fieldName = 'rubric'
     const handleSave = async () => {
         const cleaned = items.map(t => t.trim()).filter(Boolean);
         if (cleaned.length === 0) {
-            alert('루브릭 항목을 1개 이상 입력해 주세요.');
+            alert(`${titleLabel} 항목을 1개 이상 입력해 주세요.`);
             return;
         }
         setIsSaving(true);
@@ -83,10 +89,7 @@ const RubricEditor = ({ classId, session, onSaved, onClose, fieldName = 'rubric'
                     <h3 style={{ margin: 0 }}>📋 {titleLabel} — {session.title}</h3>
                     <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-sub)' }}><X size={20} /></button>
                 </div>
-                <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-sub)' }}>
-                    교사가 초안을 만들고, 수업 시간에 <strong>칠판 모드</strong>로 띄워 학생 의견을 반영해 함께 완성하세요.
-                    저장하면 학생 감상 화면에 '우리 반 감상 약속'으로 보입니다.
-                </p>
+                <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-sub)' }}>{helpText}</p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {items.map((it, i) => (
@@ -95,7 +98,7 @@ const RubricEditor = ({ classId, session, onSaved, onClose, fieldName = 'rubric'
                             <input
                                 value={it}
                                 onChange={e => setItem(i, e.target.value)}
-                                placeholder="감상 기준을 입력하세요"
+                                placeholder={itemPlaceholder}
                                 style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: '0.5rem', border: '1px solid #ddd' }}
                             />
                             <button onClick={() => removeItem(i)} title="삭제" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444' }}>
@@ -115,9 +118,11 @@ const RubricEditor = ({ classId, session, onSaved, onClose, fieldName = 'rubric'
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-                    <button onClick={() => setBoardMode(true)} style={{ padding: '0.6rem 1.2rem', borderRadius: '0.5rem', border: '1px solid var(--accent)', background: 'white', color: 'var(--accent)', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Monitor size={16} /> 칠판 모드 (학생과 함께)
-                    </button>
+                    {showBoardMode && (
+                        <button onClick={() => setBoardMode(true)} style={{ padding: '0.6rem 1.2rem', borderRadius: '0.5rem', border: '1px solid var(--accent)', background: 'white', color: 'var(--accent)', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <Monitor size={16} /> 칠판 모드 (학생과 함께)
+                        </button>
+                    )}
                     <button onClick={handleSave} disabled={isSaving} style={{ padding: '0.6rem 1.2rem', borderRadius: '0.5rem', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: isSaving ? 0.7 : 1 }}>
                         <Save size={16} /> {isSaving ? '저장 중...' : '저장'}
                     </button>
