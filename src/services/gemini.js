@@ -58,6 +58,12 @@ export const geminiService = {
         return data.questions;
     },
 
+    // 모듈 1: 펠드만 단계 초벌 판정 (교사 전용)
+    judgeFeldman: async (firstText, secondText, rubric) => {
+        const data = await callAI({ action: "feldman", firstText, secondText, rubric });
+        return data; // { level, reason }
+    },
+
     // Chatbot (Multi-turn)
     chatWithPersona: async (history, message, systemInstruction) => {
         try {

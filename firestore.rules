@@ -83,10 +83,10 @@ service cloud.firestore {
           allow create, update, delete: if false;
         }
 
-        // 1·2차 감상(모듈1): 학생 제출은 서버 경유, 교사는 모니터링 열람만
+        // 1·2차 감상(모듈1): 학생 제출은 서버 경유, 교사는 열람 + 판정 결과 기록(update)
         match /deepAppreciations/{docId} {
-          allow read: if isClassTeacher(classId);
-          allow create, update, delete: if false;
+          allow read, update: if isClassTeacher(classId);
+          allow create, delete: if false;
         }
       }
     }

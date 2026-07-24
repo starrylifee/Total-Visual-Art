@@ -8,6 +8,7 @@
  *  { action: "chat",    history, message, systemInstruction }       -> { text }
  *  { action: "image",   prompt }                                    -> { success, imageDataUrl | error }
  *  { action: "scaffold", firstText, rubric, masterpiece }           -> { questions: [...] }  (모듈1 감상 비계)
+ *  { action: "feldman",  firstText, secondText, rubric }            -> { level, reason }     (모듈1 초벌 판정, 교사 전용)
  */
 import { GoogleGenAI } from "@google/genai";
 import { authenticateRequest } from "./_lib.js";
@@ -141,6 +142,56 @@ JSON 배열로만 답하세요. 예: ["질문1?", "질문2?", "질문3?"]`;
                     return res.status(500).json({ error: "질문 생성에 실패했어요. 다시 시도해 주세요." });
                 }
                 return res.status(200).json({ questions });
+            }
+
+            // 모듈 1: 펠드만 단계 초벌 판정 (교사 전용 — 교사가 최종 확정)
+            case "feldman": {
+                if (requester.role !== "teacher") {
+                    return res.status(403).json({ error: "판정은 선생님만 실행할 수 있어요." });
+                }
+                const { firstText, secondText, rubric } = body;
+                if (!firstText && !secondText) {
+                    return res.status(400).json({ error: "판정할 감상 글이 없습니다." });
+                }
+                const rubricText = Array.isArray(rubric) && rubric.length
+                    ? rubric.map((r, i) => `${i + 1}. ${r}`).join("\n") : "(루브릭 없음)";
+                const prompt = `당신은 초등 미술 감상 평가를 돕는 보조 채점자입니다.
+학생의 감상문이 펠드만(Feldman) 감상 4단계 중 어느 단계까지 도달했는지 판정하세요.
+
+[펠드만 4단계]
+1 서술: 작품에서 보이는 것(색, 선, 모양, 인물, 소재)을 말한다.
+2 분석: 조형 요소들이 어떻게 어울리고 배치됐는지(대비, 균형, 강조 등) 말한다.
+3 해석: 작품의 의미, 분위기, 작가의 의도를 자기 생각으로 풀이한다.
+4 판단: 작품에 대한 자기 평가와 그 근거를 말한다.
+
+[우리 반 루브릭]
+${rubricText}
+
+[학생의 1차 감상]
+"${String(firstText || "").slice(0, 3000)}"
+
+[학생의 2차 감상]
+"${String(secondText || "").slice(0, 3000)}"
+
+[판정 규칙]
+- 1차와 2차를 합쳐서, 근거가 분명하게 나타난 가장 높은 단계를 고르세요.
+- 단계를 스치듯 언급한 것만으로는 도달로 보지 않습니다. 초등학생 수준에서 판단하세요.
+- reason은 학생 글을 인용한 한두 문장의 한국어로, 교사가 확정할 때 참고할 근거를 쓰세요.
+
+JSON으로만 답하세요: {"level": 1~4의 정수, "reason": "판정 근거"}`;
+
+                const response = await ai.models.generateContent({
+                    model: TEXT_MODEL,
+                    contents: prompt,
+                    config: { responseMimeType: "application/json" },
+                });
+                try {
+                    const parsed = JSON.parse(response.text);
+                    const level = Math.min(4, Math.max(1, parseInt(parsed.level, 10) || 1));
+                    return res.status(200).json({ level, reason: String(parsed.reason || "").slice(0, 500) });
+                } catch {
+                    return res.status(500).json({ error: "판정 결과를 해석하지 못했어요. 다시 시도해 주세요." });
+                }
             }
 
             case "image": {

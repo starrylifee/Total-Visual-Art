@@ -9,6 +9,7 @@ import { imageGenService } from '../services/imageGenService';
 import ClassSlideshow from '../components/ClassSlideshow';
 import MasterpiecePicker from '../components/MasterpiecePicker';
 import RubricEditor from '../components/RubricEditor';
+import AppreciationMonitor from '../components/AppreciationMonitor';
 import { DEFAULT_RUBRIC } from '../data/masterpieces';
 import { Plus, Users, Award, Palette, Play, Monitor, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
@@ -58,6 +59,8 @@ const TeacherDashboard = () => {
     const [newSessionData, setNewSessionData] = useState(emptySessionData);
     // 루브릭 편집 대상 세션 (모듈 1: 감상 루브릭 공동 설정)
     const [rubricSession, setRubricSession] = useState(null);
+    // 감상 현황 모니터링 대상 세션 (모듈 1)
+    const [monitorSession, setMonitorSession] = useState(null);
     const [isLoadingClasses, setIsLoadingClasses] = useState(true);
     const [isLoadingClassDetail, setIsLoadingClassDetail] = useState(false);
     const [isCreatingClass, setIsCreatingClass] = useState(false);
@@ -425,6 +428,16 @@ const TeacherDashboard = () => {
                 />
             )}
 
+            {/* 감상 현황 모니터링 모달 */}
+            {monitorSession && selectedClass && (
+                <AppreciationMonitor
+                    classId={selectedClass.id}
+                    session={monitorSession}
+                    studentCount={selectedClass.studentCount || 30}
+                    onClose={() => setMonitorSession(null)}
+                />
+            )}
+
             {/* Classes Tab */}
             {activeTab === 'classes' && (
                 <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
@@ -528,6 +541,14 @@ const TeacherDashboard = () => {
                                                                     style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid var(--accent)', background: 'white', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
                                                                 >
                                                                     📋 감상 루브릭{sess.rubric?.length ? ` (${sess.rubric.length})` : ''}
+                                                                </button>
+                                                            )}
+                                                            {sess.features?.deepAppreciation && (
+                                                                <button
+                                                                    onClick={() => setMonitorSession(sess)}
+                                                                    style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #6366f1', background: 'white', color: '#6366f1', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
+                                                                >
+                                                                    📊 감상 현황
                                                                 </button>
                                                             )}
                                                         </div>
