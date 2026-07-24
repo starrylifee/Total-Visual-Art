@@ -2,6 +2,31 @@ import React, { Suspense, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Text, Image as DreiImage, Environment } from '@react-three/drei';
 
+// 이미지 한 장이 로드에 실패해도(외부 URL CORS 등) 갤러리 전체가 죽지 않게 프레임 단위로 격리
+class FrameImageBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { failed: false };
+    }
+    static getDerivedStateFromError() {
+        return { failed: true };
+    }
+    componentDidCatch(error) {
+        console.warn('갤러리 이미지 로드 실패:', error?.message);
+    }
+    render() {
+        if (this.state.failed) {
+            return (
+                <mesh position={[0, 0, 0.06]}>
+                    <planeGeometry args={[2, 2.5]} />
+                    <meshStandardMaterial color="#cbd5e1" />
+                </mesh>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 // Single artwork frame in 3D
 function ArtworkFrame({ position, imageUrl, title, onClick }) {
     const [hovered, setHovered] = useState(false);
@@ -20,13 +45,15 @@ function ArtworkFrame({ position, imageUrl, title, onClick }) {
 
             {/* Artwork Image */}
             {imageUrl && (
-                <Suspense fallback={null}>
-                    <DreiImage
-                        url={imageUrl}
-                        position={[0, 0, 0.06]}
-                        scale={[2, 2.5]}
-                    />
-                </Suspense>
+                <FrameImageBoundary>
+                    <Suspense fallback={null}>
+                        <DreiImage
+                            url={imageUrl}
+                            position={[0, 0, 0.06]}
+                            scale={[2, 2.5]}
+                        />
+                    </Suspense>
+                </FrameImageBoundary>
             )}
 
             {/* Title */}
