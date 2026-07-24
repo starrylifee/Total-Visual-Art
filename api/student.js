@@ -13,6 +13,8 @@
  *  { action: "appreciation-submit", token, observation, reflection } -> 감상 저장
  *  { action: "deep-save", token, stage, firstText, questions, secondText } -> 1·2차 감상 저장(모듈1)
  *  { action: "deep-get",  token }                                    -> 내 1·2차 감상 불러오기(재입장 복원)
+ *  { action: "restore-save", token, patch }                          -> 복원 챌린지 진행 저장(모듈2, 화이트리스트 merge)
+ *  { action: "restore-get",  token }                                 -> 내 복원 챌린지 불러오기
  */
 import { adminDb, signStudentToken, verifyStudentToken, hashPassword, makeSalt } from "./_lib.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -171,11 +173,17 @@ export default async function handler(req, res) {
                 if (!prompt) return res.status(400).json({ error: "그리고 싶은 내용을 적어 주세요." });
                 if (prompt.length > 1000) return res.status(400).json({ error: "설명이 너무 길어요. 조금 줄여 주세요." });
 
+                // 모듈2 복원 챌린지 제출이면 회차를 함께 기록 (교사 큐에서 구분)
+                const kind = body.kind === "restore" ? "restore" : "free";
+                const round = kind === "restore" ? (Number(body.round) === 2 ? 2 : 1) : null;
+
                 const { classId, sessionId, studentNo } = r.auth;
                 const docRef = await db.collection(`classes/${classId}/sessions/${sessionId}/generationQueue`).add({
                     studentId: studentIdOf(studentNo),
                     studentName: `${studentNo}번`,
-                    prompt,
+                    prompt: kind === "restore" ? `[복원 ${round}차] ${prompt}` : prompt,
+                    kind,
+                    round,
                     status: "pending_approval",
                     createdAt: FieldValue.serverTimestamp(),
                     imageUrl: null,
@@ -285,6 +293,50 @@ export default async function handler(req, res) {
                         status: x.status || "",
                     },
                 });
+            }
+
+            // 모듈 2: 복원 챌린지 진행 상태. 학생당 문서 1개, 허용 필드만 merge
+            case "restore-save": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const src = body.patch || {};
+                const patch = {};
+                for (const key of ["observation1", "prompt1", "queueId1", "observation2", "prompt2", "queueId2", "reflection", "praise"]) {
+                    if (src[key] !== undefined) {
+                        const v = String(src[key]).trim();
+                        if (v.length > 5000) return res.status(400).json({ error: "글이 너무 길어요. 조금 줄여 주세요." });
+                        patch[key] = v;
+                    }
+                }
+                for (const key of ["diff1", "diff2"]) {
+                    if (src[key] !== undefined) {
+                        if (!Array.isArray(src[key])) return res.status(400).json({ error: `${key}는 배열이어야 합니다.` });
+                        patch[key] = src[key].map((d) => String(d).slice(0, 300)).slice(0, 2);
+                    }
+                }
+                if (!Object.keys(patch).length) return res.status(400).json({ error: "저장할 내용이 없습니다." });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                await db.doc(`classes/${classId}/sessions/${sessionId}/restoreChallenges/${studentIdOf(studentNo)}`).set({
+                    studentId: studentIdOf(studentNo),
+                    studentName: `${studentNo}번`,
+                    ...patch,
+                    updatedAt: FieldValue.serverTimestamp(),
+                }, { merge: true });
+                return res.status(200).json({ ok: true });
+            }
+
+            case "restore-get": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const snap = await db.doc(`classes/${classId}/sessions/${sessionId}/restoreChallenges/${studentIdOf(studentNo)}`).get();
+                if (!snap.exists) return res.status(200).json({ data: null });
+                const x = snap.data();
+                delete x.updatedAt;
+                return res.status(200).json({ data: x });
             }
 
             default:

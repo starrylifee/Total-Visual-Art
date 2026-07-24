@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { geminiService } from '../services/gemini.js';
 import { studentAuthService } from '../services/studentAuthService';
 import { getMasterpiece } from '../data/masterpieces';
-import { Sparkles, CheckCircle, Pencil, Loader } from 'lucide-react';
+import MediaEmbed from './MediaEmbed';
+import { Sparkles, CheckCircle, Pencil, Loader, Video } from 'lucide-react';
 
 /**
  * 모듈 1: 1차 감상 → AI 비계 질문 → 2차 감상 (학생)
@@ -105,6 +106,14 @@ const DeepAppreciation = ({ session, showToast }) => {
                     </>
                 ) : (
                     <p style={{ color: 'var(--text-sub)' }}>이 활동에 감상 작품이 설정되지 않았어요. 선생님께 알려 주세요.</p>
+                )}
+                {session.referenceVideoUrl && (
+                    <div style={{ marginTop: '1rem' }}>
+                        <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.5rem' }}>
+                            <Video size={18} /> 참고 영상
+                        </h4>
+                        <MediaEmbed url={session.referenceVideoUrl} height="220px" />
+                    </div>
                 )}
                 {rubric.length > 0 && (
                     <div style={{ background: '#eef2ff', border: '2px solid var(--primary)', borderRadius: '1rem', padding: '1rem 1.25rem', marginTop: '1rem' }}>

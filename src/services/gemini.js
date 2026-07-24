@@ -64,6 +64,12 @@ export const geminiService = {
         return data; // { level, reason }
     },
 
+    // 모듈 2: 원본 vs 내 생성 작품 비교 (서버가 세션 원본·본인 큐 이미지를 직접 읽음)
+    compareRestore: async (queueId) => {
+        const data = await callAI({ action: "compare", queueId });
+        return data; // { differences: [..2], praise }
+    },
+
     // Chatbot (Multi-turn)
     chatWithPersona: async (history, message, systemInstruction) => {
         try {

@@ -9,9 +9,10 @@
  *  { action: "image",   prompt }                                    -> { success, imageDataUrl | error }
  *  { action: "scaffold", firstText, rubric, masterpiece }           -> { questions: [...] }  (모듈1 감상 비계)
  *  { action: "feldman",  firstText, secondText, rubric }            -> { level, reason }     (모듈1 초벌 판정, 교사 전용)
+ *  { action: "compare",  queueId }                                  -> { differences, praise } (모듈2 원본 vs 생성 비교, 학생 토큰)
  */
 import { GoogleGenAI } from "@google/genai";
-import { authenticateRequest } from "./_lib.js";
+import { authenticateRequest, adminDb } from "./_lib.js";
 
 const TEXT_MODEL = "gemini-2.5-flash";
 const IMAGE_MODEL = "gemini-2.5-flash-image";
@@ -142,6 +143,77 @@ JSON 배열로만 답하세요. 예: ["질문1?", "질문2?", "질문3?"]`;
                     return res.status(500).json({ error: "질문 생성에 실패했어요. 다시 시도해 주세요." });
                 }
                 return res.status(200).json({ questions });
+            }
+
+            // 모듈 2: 원본 명화 vs 학생 생성 이미지 비교 — "다른 점 2가지" 코멘트
+            // 이미지 주소를 클라이언트에서 받지 않고, 세션의 원본과 본인 큐 문서에서 서버가 직접 읽는다 (위조·SSRF 차단)
+            case "compare": {
+                if (requester.role !== "student") {
+                    return res.status(403).json({ error: "학생 활동 화면에서 사용할 수 있어요." });
+                }
+                const queueId = String(body.queueId || "");
+                if (!queueId) return res.status(400).json({ error: "queueId가 필요합니다." });
+
+                const db = adminDb();
+                const { classId, sessionId, studentNo } = requester;
+                const [sessionSnap, queueSnap] = await Promise.all([
+                    db.doc(`classes/${classId}/sessions/${sessionId}`).get(),
+                    db.doc(`classes/${classId}/sessions/${sessionId}/generationQueue/${queueId}`).get(),
+                ]);
+                const referenceImageUrl = sessionSnap.exists ? sessionSnap.data().referenceImageUrl : null;
+                if (!referenceImageUrl) return res.status(400).json({ error: "이 활동에 원본 작품이 설정되지 않았어요." });
+                if (!queueSnap.exists || queueSnap.data().studentId !== `sno_${studentNo}`) {
+                    return res.status(404).json({ error: "내 작품을 찾을 수 없어요." });
+                }
+                const generated = queueSnap.data().imageUrl;
+                if (!generated || queueSnap.data().status !== "published") {
+                    return res.status(400).json({ error: "아직 공개된 작품이 없어요. 선생님 승인을 기다려 주세요." });
+                }
+
+                // 원본 다운로드 (축소판이면 그대로, 아니면 원본) → base64
+                const origResp = await fetch(referenceImageUrl);
+                if (!origResp.ok) return res.status(502).json({ error: "원본 작품 이미지를 불러오지 못했어요." });
+                const origMime = origResp.headers.get("content-type") || "image/jpeg";
+                const origB64 = Buffer.from(await origResp.arrayBuffer()).toString("base64");
+
+                // 생성본: dataURL 또는 원격 URL
+                let genB64, genMime;
+                const m = /^data:([^;]+);base64,(.+)$/.exec(generated);
+                if (m) {
+                    genMime = m[1]; genB64 = m[2];
+                } else {
+                    const genResp = await fetch(generated);
+                    if (!genResp.ok) return res.status(502).json({ error: "내 작품 이미지를 불러오지 못했어요." });
+                    genMime = genResp.headers.get("content-type") || "image/png";
+                    genB64 = Buffer.from(await genResp.arrayBuffer()).toString("base64");
+                }
+
+                const response = await ai.models.generateContent({
+                    model: TEXT_MODEL,
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: "첫 번째 이미지는 원본 명화, 두 번째 이미지는 초등학생이 관찰 글로 AI에게 설명해서 만든 그림입니다." },
+                            { inlineData: { data: origB64, mimeType: origMime } },
+                            { inlineData: { data: genB64, mimeType: genMime } },
+                            {
+                                text: `두 그림을 비교해서 초등학생에게 알려 주세요.
+- differences: 원본과 다른 점을 정확히 2가지. 학생이 다음 도전에서 관찰 글에 추가하면 좋을 구체적 단서(색, 위치, 모양, 빠진 대상)를 짚어 주세요. 각 한 문장.
+- praise: 원본과 닮게 표현된 점 1가지를 칭찬. 한 문장.
+쉬운 한국어로, JSON으로만 답하세요: {"differences": ["...", "..."], "praise": "..."}`,
+                            },
+                        ],
+                    }],
+                    config: { responseMimeType: "application/json" },
+                });
+                try {
+                    const parsed = JSON.parse(response.text);
+                    const differences = (parsed.differences || []).map((d) => String(d).slice(0, 300)).slice(0, 2);
+                    if (!differences.length) throw new Error("empty");
+                    return res.status(200).json({ differences, praise: String(parsed.praise || "").slice(0, 300) });
+                } catch {
+                    return res.status(500).json({ error: "비교 결과를 만들지 못했어요. 다시 시도해 주세요." });
+                }
             }
 
             // 모듈 1: 펠드만 단계 초벌 판정 (교사 전용 — 교사가 최종 확정)

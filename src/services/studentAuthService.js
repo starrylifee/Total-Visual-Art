@@ -48,8 +48,8 @@ export const studentAuthService = {
     getToken: () => localStorage.getItem(TOKEN_KEY),
 
     // ---- 활동 데이터 (토큰 필요) ----
-    submitPrompt: (prompt) =>
-        call({ action: "queue-submit", token: localStorage.getItem(TOKEN_KEY), prompt }),
+    submitPrompt: (prompt, opts = {}) =>
+        call({ action: "queue-submit", token: localStorage.getItem(TOKEN_KEY), prompt, ...opts }),
 
     listMyQueue: async () => {
         const data = await call({ action: "queue-list", token: localStorage.getItem(TOKEN_KEY) });
@@ -68,6 +68,15 @@ export const studentAuthService = {
 
     getDeepAppreciation: async () => {
         const data = await call({ action: "deep-get", token: localStorage.getItem(TOKEN_KEY) });
+        return data.data;
+    },
+
+    // 모듈 2: 복원 챌린지 진행 저장/복원
+    saveRestore: (patch) =>
+        call({ action: "restore-save", token: localStorage.getItem(TOKEN_KEY), patch }),
+
+    getRestore: async () => {
+        const data = await call({ action: "restore-get", token: localStorage.getItem(TOKEN_KEY) });
         return data.data;
     },
 

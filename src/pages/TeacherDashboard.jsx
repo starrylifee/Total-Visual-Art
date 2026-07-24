@@ -365,7 +365,7 @@ const TeacherDashboard = () => {
                                 <input type="checkbox" checked={newSessionData.features?.chat} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, chat: e.target.checked } })} /> 챗봇
                             </label>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
-                                <input type="checkbox" checked={newSessionData.features?.appreciation} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, appreciation: e.target.checked } })} /> 감상 루프
+                                <input type="checkbox" checked={newSessionData.features?.appreciation} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, appreciation: e.target.checked } })} /> 복원 챌린지
                             </label>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
                                 <input type="checkbox" checked={newSessionData.features?.textHelp} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, textHelp: e.target.checked } })} /> 표현 도우미

@@ -88,6 +88,12 @@ service cloud.firestore {
           allow read, update: if isClassTeacher(classId);
           allow create, delete: if false;
         }
+
+        // 복원 챌린지(모듈2): 학생 제출은 서버 경유, 교사는 열람만
+        match /restoreChallenges/{docId} {
+          allow read: if isClassTeacher(classId);
+          allow create, update, delete: if false;
+        }
       }
     }
   }

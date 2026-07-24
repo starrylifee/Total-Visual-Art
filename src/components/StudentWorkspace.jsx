@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { geminiService } from '../services/gemini.js';
 import { studentAuthService } from '../services/studentAuthService';
-import { getMasterpiece } from '../data/masterpieces';
 import DeepAppreciation from './DeepAppreciation';
-import MediaEmbed from './MediaEmbed';
-import { Image, MessageSquare, PenTool, Loader, Send, X, CheckCircle, AlertCircle, Video, RefreshCw } from 'lucide-react';
+import RestoreChallenge from './RestoreChallenge';
+import { Image, MessageSquare, PenTool, Loader, Send, X, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
 const Toast = ({ message, type, onClose }) => {
     useEffect(() => {
@@ -27,8 +26,6 @@ const QUEUE_POLL_MS = 10000;
 // 학생 활동 화면 (토큰 기반). session = /api/student me 응답
 const StudentWorkspace = ({ session }) => {
     const features = session.features || {};
-    const masterpiece = getMasterpiece(session.masterpieceId);
-    const rubric = session.rubric || [];
     const firstTab = features.deepAppreciation ? 'deep'
         : features.imageGen ? 'creation'
         : features.vision ? 'vision'
@@ -50,12 +47,10 @@ const StudentWorkspace = ({ session }) => {
     const [visionAnalysis, setVisionAnalysis] = useState('');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-    // 표현 도우미 / 감상
+    // 표현 도우미
     const [userCritique, setUserCritique] = useState('');
     const [refinedCritique, setRefinedCritique] = useState('');
     const [isRefining, setIsRefining] = useState(false);
-    const [appreciationText, setAppreciationText] = useState('');
-    const [isSavingAppreciation, setIsSavingAppreciation] = useState(false);
 
     // 챗봇
     const [chatMessages, setChatMessages] = useState([]);
@@ -77,11 +72,11 @@ const StudentWorkspace = ({ session }) => {
 
     // 내 생성 요청 목록: 입장 시 + 주기적으로 갱신 (실시간 구독 대신 폴링)
     useEffect(() => {
-        if (!features.imageGen && !features.appreciation) return;
+        if (!features.imageGen) return;
         refreshQueue();
         const timer = setInterval(refreshQueue, QUEUE_POLL_MS);
         return () => clearInterval(timer);
-    }, [features.imageGen, features.appreciation, refreshQueue]);
+    }, [features.imageGen, refreshQueue]);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -162,25 +157,6 @@ const StudentWorkspace = ({ session }) => {
         }
     };
 
-    const handleSaveAppreciation = async () => {
-        if (!appreciationText.trim()) {
-            showToast("성찰 내용을 입력해주세요!", "error");
-            return;
-        }
-        setIsSavingAppreciation(true);
-        try {
-            await studentAuthService.submitAppreciation(userCritique, appreciationText);
-            showToast("✅ 감상 완료! 잘했어요!", "success");
-            setAppreciationText('');
-        } catch (error) {
-            showToast("저장 오류: " + error.message, "error");
-        } finally {
-            setIsSavingAppreciation(false);
-        }
-    };
-
-    const publishedImage = myGenerations.find(g => g.status === 'published' && g.imageUrl);
-
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -204,7 +180,7 @@ const StudentWorkspace = ({ session }) => {
                         <Image size={16} /> 👁️ 작품 분석
                     </button>
                 )}
-                {(features.appreciation || features.textHelp) && (
+                {features.textHelp && (
                     <button className={activeTab === 'text' ? 'btn-primary' : 'btn-secondary'} onClick={() => setActiveTab('text')}>
                         <PenTool size={16} /> ✏️ 표현 도우미
                     </button>
@@ -216,7 +192,7 @@ const StudentWorkspace = ({ session }) => {
                 )}
                 {features.appreciation && (
                     <button className={activeTab === 'appreciation' ? 'btn-primary' : 'btn-secondary'} onClick={() => setActiveTab('appreciation')}>
-                        <Image size={16} /> 🔄 감상 루프
+                        <Image size={16} /> 🧩 복원 챌린지
                     </button>
                 )}
             </div>
@@ -365,115 +341,7 @@ const StudentWorkspace = ({ session }) => {
                 )}
 
                 {activeTab === 'appreciation' && (
-                    !session.referenceImageUrl ? (
-                        <p style={{ color: 'var(--text-sub)' }}>이 활동에 감상 작품이 설정되지 않았습니다. 선생님께 알려주세요.</p>
-                    ) : (
-                        <div style={{ display: 'flex', gap: '2rem', flexDirection: 'column' }}>
-                            {rubric.length > 0 && (
-                                <div style={{ background: '#eef2ff', border: '2px solid var(--primary)', borderRadius: '1rem', padding: '1rem 1.5rem' }}>
-                                    <h3 style={{ margin: '0 0 0.5rem' }}>📋 우리 반 감상 약속</h3>
-                                    <ol style={{ margin: 0, paddingLeft: '1.4rem', fontSize: '1.05rem', lineHeight: 1.8 }}>
-                                        {rubric.map((r, i) => <li key={i}>{r}</li>)}
-                                    </ol>
-                                </div>
-                            )}
-                            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-                                <div style={{ flex: '1 1 300px' }}>
-                                    <h3>📖 1단계: 깊이 감상하기</h3>
-                                    <img src={session.referenceImageUrl} alt="참조 작품" style={{ maxWidth: '100%', borderRadius: '1rem', maxHeight: '400px', boxShadow: 'var(--shadow)' }} />
-                                    {masterpiece && (
-                                        <p style={{ margin: '0.5rem 0 0', fontSize: '1rem', color: 'var(--text-sub)' }}>
-                                            <strong style={{ color: 'var(--text-main)' }}>{masterpiece.title}</strong>
-                                            {' · '}{masterpiece.artist} ({masterpiece.year}) · {masterpiece.style}
-                                        </p>
-                                    )}
-                                    {session.referenceVideoUrl && (
-                                        <div style={{ marginTop: '1rem' }}>
-                                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                                <Video size={18} /> 참고 영상
-                                            </h4>
-                                            <MediaEmbed url={session.referenceVideoUrl} height="250px" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div style={{ flex: '1 1 300px' }}>
-                                    <h3>👀 무엇이 보이나요?</h3>
-                                    <p style={{ color: 'var(--text-sub)' }}>색, 선, 느낌을 자세히 적어보세요.</p>
-                                    <textarea
-                                        value={userCritique}
-                                        onChange={e => setUserCritique(e.target.value)}
-                                        style={{ width: '100%', height: '150px', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #ddd', fontSize: '1.05rem' }}
-                                        placeholder="나는 이 그림에서... 를 보았다"
-                                    />
-                                    <button onClick={handleCritiqueRefinement} style={{ marginTop: '0.5rem', padding: '0.5rem 1rem', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}>
-                                        ✨ AI 도움 받기
-                                    </button>
-                                    {refinedCritique && (
-                                        <div style={{ background: '#fef3c7', padding: '1rem', marginTop: '0.5rem', borderRadius: '0.5rem' }}>
-                                            <strong>AI 제안:</strong> {refinedCritique}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div style={{ borderTop: '2px solid var(--primary)', paddingTop: '1.5rem' }}>
-                                <h3>🎨 2단계: 재창조하기</h3>
-                                <p style={{ color: 'var(--text-sub)' }}>감상한 내용을 바탕으로 AI가 새로운 이미지를 만들어요!</p>
-                                <button
-                                    style={{ padding: '1rem 2rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '2rem', cursor: 'pointer', fontWeight: '600', marginTop: '1rem' }}
-                                    onClick={() => {
-                                        if (!userCritique) {
-                                            showToast("먼저 1단계에서 감상을 작성해주세요!", "error");
-                                            return;
-                                        }
-                                        setGenPrompt(userCritique);
-                                        setActiveTab('creation');
-                                    }}
-                                >
-                                    🖌️ 내 감상으로 그림 만들기
-                                </button>
-                            </div>
-
-                            <div style={{ borderTop: '2px solid var(--primary)', paddingTop: '1.5rem' }}>
-                                <h3>🔍 3단계: 비교하기</h3>
-                                <p style={{ color: 'var(--text-sub)' }}>원본 작품과 AI가 만든 작품을 나란히 비교해보세요.</p>
-                                <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-                                    <div style={{ flex: '1 1 200px', textAlign: 'center' }}>
-                                        <h4>📌 원본 작품</h4>
-                                        <img src={session.referenceImageUrl} alt="원본" style={{ maxWidth: '100%', borderRadius: '0.5rem', border: '3px solid var(--primary)' }} />
-                                    </div>
-                                    <div style={{ flex: '1 1 200px', textAlign: 'center' }}>
-                                        <h4>🤖 AI 재창조 작품</h4>
-                                        {publishedImage ? (
-                                            <img src={publishedImage.imageUrl} alt="AI 제작" style={{ maxWidth: '100%', borderRadius: '0.5rem', border: '3px solid var(--accent)' }} />
-                                        ) : (
-                                            <div style={{ padding: '3rem', background: '#f8f8f8', borderRadius: '0.5rem', color: 'var(--text-sub)' }}>
-                                                아직 생성된 이미지가 없어요.<br />2단계에서 그림을 만들어보세요!
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style={{ borderTop: '2px solid var(--primary)', paddingTop: '1.5rem' }}>
-                                <h3>📝 4단계: 성찰하기</h3>
-                                <p style={{ color: 'var(--text-sub)' }}>두 작품을 비교하며 느낀 점을 작성해보세요.</p>
-                                <textarea
-                                    value={appreciationText}
-                                    onChange={(e) => setAppreciationText(e.target.value)}
-                                    placeholder="원본과 AI가 만든 그림을 비교했을 때, 나는...&#10;비슷한 점:&#10;다른 점:&#10;이 활동을 통해 배운 것:"
-                                    style={{ width: '100%', height: '200px', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #ddd', marginTop: '1rem', fontSize: '1.05rem' }}
-                                />
-                                <button
-                                    onClick={handleSaveAppreciation}
-                                    disabled={isSavingAppreciation}
-                                    style={{ marginTop: '1rem', padding: '1rem 2rem', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '2rem', cursor: 'pointer', fontWeight: '600', opacity: isSavingAppreciation ? 0.7 : 1 }}
-                                >
-                                    {isSavingAppreciation ? '저장 중...' : '✅ 감상 완료하기'}
-                                </button>
-                            </div>
-                        </div>
-                    )
+                    <RestoreChallenge session={session} showToast={showToast} />
                 )}
             </div>
         </div>
