@@ -4,13 +4,13 @@ import { DEFAULT_RUBRIC, getMasterpiece } from '../data/masterpieces';
 import { X, Plus, Trash2, Monitor, Save } from 'lucide-react';
 
 /**
- * 감상 루브릭 공동 설정 모달 (모듈 1)
+ * 루브릭 공동 설정 모달 (모듈 1: 감상 rubric / 모듈 5: 작품 평가 artRubric)
  * - 교사가 초안을 만들고, 수업 중 전자칠판 모드로 띄워 학생 의견을 반영해 고친다
- * - 저장하면 세션 문서 rubric에 반영 → 학생 감상 화면 '우리 반 감상 약속'으로 표시
+ * - fieldName으로 세션의 어느 루브릭 필드를 편집할지 지정한다
  */
-const RubricEditor = ({ classId, session, onSaved, onClose }) => {
+const RubricEditor = ({ classId, session, onSaved, onClose, fieldName = 'rubric', titleLabel = '감상 루브릭', defaultItems = DEFAULT_RUBRIC }) => {
     const [items, setItems] = useState(
-        session.rubric?.length ? [...session.rubric] : [...DEFAULT_RUBRIC]
+        session[fieldName]?.length ? [...session[fieldName]] : [...defaultItems]
     );
     const [isSaving, setIsSaving] = useState(false);
     const [boardMode, setBoardMode] = useState(false);
@@ -28,7 +28,7 @@ const RubricEditor = ({ classId, session, onSaved, onClose }) => {
         }
         setIsSaving(true);
         try {
-            await sessionService.updateSession(classId, session.id, { rubric: cleaned });
+            await sessionService.updateSession(classId, session.id, { [fieldName]: cleaned });
             onSaved(cleaned);
         } catch (e) {
             console.error('루브릭 저장 실패:', e);
@@ -44,7 +44,7 @@ const RubricEditor = ({ classId, session, onSaved, onClose }) => {
             <div style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 200, display: 'flex', flexDirection: 'column', padding: '2rem 3rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h1 style={{ margin: 0, fontSize: '2.2rem' }}>
-                        📋 우리 반 감상 약속
+                        📋 우리 반 {fieldName === 'artRubric' ? '작품 약속' : '감상 약속'}
                         {masterpiece && <span style={{ fontSize: '1.4rem', color: 'var(--text-sub)', marginLeft: '1rem' }}>{masterpiece.title} · {masterpiece.artist}</span>}
                     </h1>
                     <button onClick={() => setBoardMode(false)} style={{ padding: '0.75rem 1.5rem', borderRadius: '0.75rem', border: '1px solid #ddd', background: '#f8f8f8', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 600 }}>
@@ -80,7 +80,7 @@ const RubricEditor = ({ classId, session, onSaved, onClose }) => {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 150 }}>
             <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '1rem', width: '600px', maxWidth: '95vw', maxHeight: '88vh', overflowY: 'auto', boxShadow: 'var(--shadow)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <h3 style={{ margin: 0 }}>📋 감상 루브릭 — {session.title}</h3>
+                    <h3 style={{ margin: 0 }}>📋 {titleLabel} — {session.title}</h3>
                     <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-sub)' }}><X size={20} /></button>
                 </div>
                 <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-sub)' }}>
@@ -109,7 +109,7 @@ const RubricEditor = ({ classId, session, onSaved, onClose }) => {
                     <button onClick={addItem} style={{ padding: '0.5rem 1rem', borderRadius: '2rem', border: '1px dashed var(--primary)', background: 'white', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }}>
                         <Plus size={14} style={{ verticalAlign: '-2px' }} /> 항목 추가
                     </button>
-                    <button onClick={() => setItems([...DEFAULT_RUBRIC])} style={{ padding: '0.5rem 1rem', borderRadius: '2rem', border: '1px solid #ddd', background: 'white', color: 'var(--text-main)', cursor: 'pointer' }}>
+                    <button onClick={() => setItems([...defaultItems])} style={{ padding: '0.5rem 1rem', borderRadius: '2rem', border: '1px solid #ddd', background: 'white', color: 'var(--text-main)', cursor: 'pointer' }}>
                         기본 템플릿으로
                     </button>
                 </div>

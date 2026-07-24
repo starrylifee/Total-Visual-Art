@@ -100,7 +100,7 @@ classes/{classId}                   # teacherId, 학급명
 - [x] 모듈 4: 친구 작품 갤러리에서 선택 → 감상 → 3~4컷 스토리보드 편집기 — `StoryboardStudio.jsx`(features.storyboard, 기본 off): gallery-list(공개 작품 최신 30개, 번호만 노출) → 한 줄 감상 → 컷 편집기(3~4컷, 추가/삭제)
 - [x] 모듈 4: 스토리보드 → 영상 프롬프트 완성 (AI 다듬기 비계) — `/api/ai` storyboard-polish(컷 내용 보존+장면 연결+카메라 표현, tip 질문 1개) → 학생 수정 → `videoPrompts/{sno}_sb` 제출 → 기존 오퍼레이터 보드 재사용(종류 배지로 인물의 하루/스토리보드 구분, 추가 규칙 배포 불필요)
 - [x] 교사 오퍼레이터 보드: 프롬프트 목록·복사 → 영상 URL 등록 → 학생 공유 — `OperatorBoard.jsx`(대시보드 '🎬 영상 보드' 버튼): 학생별 카드(상태 배지: 작성 중/제출됨/영상 등록됨, 관찰 요약), 프롬프트 클립보드 복사, KLING/FLOW 바로가기, 영상 URL 등록(엔터 지원, https 검증) → 학생 화면 15초 폴링으로 자동 공유. 30초 자동 갱신
-- [ ] 모듈 5: 작품 사진 업로드 → AI Vision 루브릭 초벌 → 교사 확정 → 성장 다짐
+- [x] 모듈 5: 작품 사진 업로드 → AI Vision 루브릭 초벌 → 교사 확정 → 성장 다짐 — 학생 `ArtworkReview.jsx`(features.artReview, 기본 off): 업로드(1024px 압축) → artwork-review 액션(작품 루브릭 항목별 met+제안형 코멘트, 학생 즉석 표시) → 교사 `ArtReviewBoard.jsx`(코멘트+확정, 확정 전 다짐 서버 차단) → 성장 다짐. 작품 루브릭(artRubric)은 RubricEditor 재사용(fieldName 프롭 확장, 기본 4항목·칠판 모드 지원)
 - [ ] 커밋 + 푸시 + 배포 확인 + UX 자체 점검
 
 ### 4주차 — 마감·확산

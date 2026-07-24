@@ -5,6 +5,7 @@ import DeepAppreciation from './DeepAppreciation';
 import RestoreChallenge from './RestoreChallenge';
 import PortraitStory from './PortraitStory';
 import StoryboardStudio from './StoryboardStudio';
+import ArtworkReview from './ArtworkReview';
 import { Image, MessageSquare, PenTool, Loader, Send, X, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
 const Toast = ({ message, type, onClose }) => {
@@ -31,6 +32,7 @@ const StudentWorkspace = ({ session }) => {
     const firstTab = features.deepAppreciation ? 'deep'
         : features.portrait ? 'portrait'
         : features.storyboard ? 'storyboard'
+        : features.artReview ? 'artreview'
         : features.imageGen ? 'creation'
         : features.vision ? 'vision'
         : features.appreciation ? 'appreciation'
@@ -209,6 +211,11 @@ const StudentWorkspace = ({ session }) => {
                         <Image size={16} /> 🎞️ 스토리보드
                     </button>
                 )}
+                {features.artReview && (
+                    <button className={activeTab === 'artreview' ? 'btn-primary' : 'btn-secondary'} onClick={() => setActiveTab('artreview')}>
+                        <Image size={16} /> 🖼️ 내 작품 평가
+                    </button>
+                )}
             </div>
 
             <div className="workspace-content" style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: '1rem', padding: '2rem', background: '#fff', overflowY: 'auto' }}>
@@ -364,6 +371,10 @@ const StudentWorkspace = ({ session }) => {
 
                 {activeTab === 'storyboard' && (
                     <StoryboardStudio session={session} showToast={showToast} />
+                )}
+
+                {activeTab === 'artreview' && (
+                    <ArtworkReview session={session} showToast={showToast} />
                 )}
             </div>
         </div>

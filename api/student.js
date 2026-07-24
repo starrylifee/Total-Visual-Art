@@ -20,6 +20,8 @@
  *  { action: "gallery-list", token }                                 -> 이 활동의 공개 작품 갤러리(모듈4, 최신 30개)
  *  { action: "storyboard-save", token, patch }                       -> 스토리보드 진행 저장(모듈4)
  *  { action: "storyboard-get",  token }                              -> 내 스토리보드 불러오기
+ *  { action: "artwork-save", token, patch }                          -> 작품 평가 진행 저장(모듈5)
+ *  { action: "artwork-get",  token }                                 -> 내 작품 평가 불러오기(교사 확정 포함)
  */
 import { adminDb, signStudentToken, verifyStudentToken, hashPassword, makeSalt } from "./_lib.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -68,6 +70,7 @@ function sessionInfo(r) {
         portraitImageUrl: s.portraitImageUrl || "",
         portraitName: s.portraitName || "",
         portraitDesc: s.portraitDesc || "",
+        artRubric: Array.isArray(s.artRubric) ? s.artRubric : [],
     };
 }
 
@@ -472,6 +475,80 @@ export default async function handler(req, res) {
                         prompt: x.prompt || "",
                         status: x.status || "",
                         videoUrl: x.videoUrl || "",
+                    },
+                });
+            }
+
+            // 모듈 5: 작품 평가. 학생당 문서 1개. 교사 확정 필드(teacherComment/teacherConfirmed)는 교사가 직접 기록
+            case "artwork-save": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const src = body.patch || {};
+                const { classId, sessionId, studentNo } = r.auth;
+                const docRef = db.doc(`classes/${classId}/sessions/${sessionId}/artworkReviews/${studentIdOf(studentNo)}`);
+
+                const patch = {};
+                if (src.imageDataUrl !== undefined) {
+                    const v = String(src.imageDataUrl);
+                    if (!/^data:image\/(jpeg|png|webp);base64,/.test(v)) {
+                        return res.status(400).json({ error: "이미지 형식이 올바르지 않아요." });
+                    }
+                    if (v.length > 900_000) return res.status(400).json({ error: "사진이 너무 커요. 다시 시도해 주세요." });
+                    patch.imageDataUrl = v;
+                    patch.status = "uploaded";
+                }
+                if (src.aiReview !== undefined) {
+                    const items = Array.isArray(src.aiReview.items) ? src.aiReview.items.slice(0, 6) : [];
+                    patch.aiReview = {
+                        items: items.map((it) => ({
+                            criterion: String(it.criterion || "").slice(0, 200),
+                            met: it.met === true,
+                            comment: String(it.comment || "").slice(0, 300),
+                        })),
+                        overall: String(src.aiReview.overall || "").slice(0, 500),
+                    };
+                    patch.status = "ai_done";
+                }
+                if (src.pledge !== undefined) {
+                    // 성장 다짐은 교사 확정 후에만
+                    const snap = await docRef.get();
+                    if (!snap.exists || snap.data().teacherConfirmed !== true) {
+                        return res.status(400).json({ error: "선생님 확정 후에 다짐을 쓸 수 있어요." });
+                    }
+                    const v = String(src.pledge).trim();
+                    if (!v) return res.status(400).json({ error: "다짐을 적어 주세요." });
+                    if (v.length > 2000) return res.status(400).json({ error: "글이 너무 길어요. 조금 줄여 주세요." });
+                    patch.pledge = v;
+                    patch.status = "pledged";
+                }
+                if (!Object.keys(patch).length) return res.status(400).json({ error: "저장할 내용이 없습니다." });
+
+                await docRef.set({
+                    studentId: studentIdOf(studentNo),
+                    studentName: `${studentNo}번`,
+                    ...patch,
+                    updatedAt: FieldValue.serverTimestamp(),
+                }, { merge: true });
+                return res.status(200).json({ ok: true });
+            }
+
+            case "artwork-get": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const snap = await db.doc(`classes/${classId}/sessions/${sessionId}/artworkReviews/${studentIdOf(studentNo)}`).get();
+                if (!snap.exists) return res.status(200).json({ data: null });
+                const x = snap.data();
+                return res.status(200).json({
+                    data: {
+                        imageDataUrl: x.imageDataUrl || "",
+                        aiReview: x.aiReview || null,
+                        teacherComment: x.teacherComment || "",
+                        teacherConfirmed: x.teacherConfirmed === true,
+                        pledge: x.pledge || "",
+                        status: x.status || "",
                     },
                 });
             }

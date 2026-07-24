@@ -100,6 +100,12 @@ service cloud.firestore {
           allow read, update: if isClassTeacher(classId);
           allow create, delete: if false;
         }
+
+        // 작품 평가(모듈5): 학생 업로드는 서버 경유, 교사는 열람 + 확정·코멘트 기록(update)
+        match /artworkReviews/{docId} {
+          allow read, update: if isClassTeacher(classId);
+          allow create, delete: if false;
+        }
       }
     }
   }

@@ -12,6 +12,7 @@
  *  { action: "compare",  queueId }                                  -> { differences, praise } (모듈2 원본 vs 생성 비교, 학생 토큰)
  *  { action: "video-coach", observation, prompt, portraitName }     -> { good, tips } (모듈3 영상 프롬프트 비계)
  *  { action: "storyboard-polish", cuts, appreciation }               -> { prompt, tip } (모듈4 스토리보드 → 영상 프롬프트 다듬기)
+ *  { action: "artwork-review", image, artRubric }                    -> { items, overall } (모듈5 작품 루브릭 초벌 채점)
  */
 import { GoogleGenAI } from "@google/genai";
 import { authenticateRequest, adminDb } from "./_lib.js";
@@ -300,6 +301,58 @@ JSON으로만 답하세요: {"prompt": "...", "tip": "...?"}`;
                     return res.status(200).json({ prompt: polished.slice(0, 2000), tip: String(parsed.tip || "").slice(0, 300) });
                 } catch {
                     return res.status(500).json({ error: "다듬기에 실패했어요. 다시 시도해 주세요." });
+                }
+            }
+
+            // 모듈 5: 작품 사진을 루브릭 기준으로 초벌 채점 — 교사가 최종 확정한다
+            case "artwork-review": {
+                const { image, artRubric } = body;
+                if (!image?.data || !image?.mimeType) {
+                    return res.status(400).json({ error: "작품 사진이 필요합니다." });
+                }
+                const criteria = (Array.isArray(artRubric) && artRubric.length ? artRubric : [
+                    "주제가 잘 드러나게 표현했나요?",
+                    "색과 모양을 어울리게 사용했나요?",
+                    "나만의 아이디어가 담겨 있나요?",
+                    "정성을 들여 끝까지 완성했나요?",
+                ]).map((c) => String(c).slice(0, 200)).slice(0, 6);
+
+                const reviewPrompt = `당신은 초등학교 미술 선생님을 돕는 보조 채점자입니다.
+학생의 작품 사진을 보고, 아래 루브릭 항목별로 초벌 평가를 해 주세요. 최종 판단은 담임 선생님이 합니다.
+
+[루브릭]
+${criteria.map((c, i) => `${i + 1}. ${c}`).join("\n")}
+
+[평가 규칙]
+- 항목마다: met(이 항목을 잘 달성했으면 true, 더 보완하면 좋으면 false)와 comment(작품에서 실제로 보이는 근거를 담아 한 문장).
+- comment는 학생이 읽습니다. 따뜻하게, met=false여도 나무라지 말고 "…해 보면 어떨까요?"처럼 제안으로.
+- overall: 작품 전체에 대한 칭찬과 응원 한두 문장.
+- 쉬운 한국어.
+
+JSON으로만 답하세요: {"items": [{"criterion": "루브릭 문장 그대로", "met": true, "comment": "..."}], "overall": "..."}`;
+
+                const response = await ai.models.generateContent({
+                    model: TEXT_MODEL,
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: reviewPrompt },
+                            { inlineData: { data: image.data, mimeType: image.mimeType } },
+                        ],
+                    }],
+                    config: { responseMimeType: "application/json" },
+                });
+                try {
+                    const parsed = JSON.parse(response.text);
+                    const items = (parsed.items || []).slice(0, 6).map((it) => ({
+                        criterion: String(it.criterion || "").slice(0, 200),
+                        met: it.met === true,
+                        comment: String(it.comment || "").slice(0, 300),
+                    }));
+                    if (!items.length) throw new Error("empty");
+                    return res.status(200).json({ items, overall: String(parsed.overall || "").slice(0, 500) });
+                } catch {
+                    return res.status(500).json({ error: "초벌 평가를 만들지 못했어요. 다시 시도해 주세요." });
                 }
             }
 

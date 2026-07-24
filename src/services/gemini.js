@@ -82,6 +82,12 @@ export const geminiService = {
         return data; // { prompt, tip }
     },
 
+    // 모듈 5: 작품 사진 루브릭 초벌 채점. image = fileToResizedBase64 결과
+    reviewArtwork: async (image, artRubric) => {
+        const data = await callAI({ action: "artwork-review", image, artRubric });
+        return data; // { items: [{criterion, met, comment}], overall }
+    },
+
     // Chatbot (Multi-turn)
     chatWithPersona: async (history, message, systemInstruction) => {
         try {
@@ -100,7 +106,7 @@ export const geminiService = {
  */
 const MAX_DIMENSION = 1024;
 
-async function fileToResizedBase64(file) {
+export async function fileToResizedBase64(file) {
     const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result);

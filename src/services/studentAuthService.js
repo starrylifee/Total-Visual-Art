@@ -103,6 +103,15 @@ export const studentAuthService = {
         return data.data;
     },
 
+    // 모듈 5: 작품 평가 진행 저장/복원
+    saveArtwork: (patch) =>
+        call({ action: "artwork-save", token: localStorage.getItem(TOKEN_KEY), patch }),
+
+    getArtwork: async () => {
+        const data = await call({ action: "artwork-get", token: localStorage.getItem(TOKEN_KEY) });
+        return data.data;
+    },
+
     getInfo: () => {
         try {
             return JSON.parse(localStorage.getItem(INFO_KEY));

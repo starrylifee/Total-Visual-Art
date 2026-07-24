@@ -11,7 +11,8 @@ import MasterpiecePicker from '../components/MasterpiecePicker';
 import RubricEditor from '../components/RubricEditor';
 import AppreciationMonitor from '../components/AppreciationMonitor';
 import OperatorBoard from '../components/OperatorBoard';
-import { DEFAULT_RUBRIC } from '../data/masterpieces';
+import ArtReviewBoard from '../components/ArtReviewBoard';
+import { DEFAULT_RUBRIC, DEFAULT_ART_RUBRIC } from '../data/masterpieces';
 import { Plus, Users, Award, Palette, Play, Monitor, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -56,7 +57,7 @@ const TeacherDashboard = () => {
         title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '',
         masterpieceId: null,
         portraitImageUrl: '', portraitName: '', portraitDesc: '',
-        features: { deepAppreciation: true, vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true, portrait: false, storyboard: false }
+        features: { deepAppreciation: true, vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true, portrait: false, storyboard: false, artReview: false }
     };
     const [newSessionData, setNewSessionData] = useState(emptySessionData);
     // 루브릭 편집 대상 세션 (모듈 1: 감상 루브릭 공동 설정)
@@ -65,6 +66,9 @@ const TeacherDashboard = () => {
     const [monitorSession, setMonitorSession] = useState(null);
     // 영상 오퍼레이터 보드 대상 세션 (모듈 3)
     const [operatorSession, setOperatorSession] = useState(null);
+    // 작품 평가 확정 보드 (모듈 5) / 작품 루브릭 편집
+    const [artReviewSession, setArtReviewSession] = useState(null);
+    const [artRubricSession, setArtRubricSession] = useState(null);
     const [isLoadingClasses, setIsLoadingClasses] = useState(true);
     const [isLoadingClassDetail, setIsLoadingClassDetail] = useState(false);
     const [isCreatingClass, setIsCreatingClass] = useState(false);
@@ -156,6 +160,7 @@ const TeacherDashboard = () => {
                 ...newSessionData,
                 title: newSessionData.title.trim(),
                 rubric: DEFAULT_RUBRIC,
+                artRubric: DEFAULT_ART_RUBRIC,
                 teacherId: currentUser.uid
             });
             setShowSessionModal(false);
@@ -380,6 +385,9 @@ const TeacherDashboard = () => {
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
                                 <input type="checkbox" checked={newSessionData.features?.storyboard} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, storyboard: e.target.checked } })} /> 스토리보드(영상)
                             </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
+                                <input type="checkbox" checked={newSessionData.features?.artReview} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, artReview: e.target.checked } })} /> 작품 평가
+                            </label>
                         </div>
 
                         <input value={newSessionData.title} onChange={e => setNewSessionData({ ...newSessionData, title: e.target.value })} placeholder="활동 제목 (예: 반 고흐 감상)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
@@ -464,6 +472,32 @@ const TeacherDashboard = () => {
                     classId={selectedClass.id}
                     session={operatorSession}
                     onClose={() => setOperatorSession(null)}
+                />
+            )}
+
+            {/* 작품 루브릭 편집 모달 (모듈 5) */}
+            {artRubricSession && selectedClass && (
+                <RubricEditor
+                    classId={selectedClass.id}
+                    session={artRubricSession}
+                    fieldName="artRubric"
+                    titleLabel="작품 루브릭"
+                    defaultItems={DEFAULT_ART_RUBRIC}
+                    onClose={() => setArtRubricSession(null)}
+                    onSaved={async (artRubric) => {
+                        setArtRubricSession(null);
+                        setSessions(sessions.map(s => (s.id === artRubricSession.id ? { ...s, artRubric } : s)));
+                        showToast('📋 작품 루브릭이 저장되었습니다!', 'success');
+                    }}
+                />
+            )}
+
+            {/* 작품 평가 확정 보드 모달 (모듈 5) */}
+            {artReviewSession && selectedClass && (
+                <ArtReviewBoard
+                    classId={selectedClass.id}
+                    session={artReviewSession}
+                    onClose={() => setArtReviewSession(null)}
                 />
             )}
 
@@ -587,6 +621,22 @@ const TeacherDashboard = () => {
                                                                 >
                                                                     🎬 영상 보드
                                                                 </button>
+                                                            )}
+                                                            {sess.features?.artReview && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => setArtRubricSession(sess)}
+                                                                        style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #b45309', background: 'white', color: '#b45309', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
+                                                                    >
+                                                                        📋 작품 루브릭{sess.artRubric?.length ? ` (${sess.artRubric.length})` : ''}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setArtReviewSession(sess)}
+                                                                        style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #059669', background: 'white', color: '#059669', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
+                                                                    >
+                                                                        🖼️ 작품 평가
+                                                                    </button>
+                                                                </>
                                                             )}
                                                         </div>
                                                     </div>
