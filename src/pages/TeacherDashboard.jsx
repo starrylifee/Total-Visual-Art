@@ -490,6 +490,15 @@ const TeacherDashboard = () => {
                                 <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>🎬 인물의 하루 — 인물 사진 등록</p>
                                 <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: 'var(--text-sub)' }}>역사 인물 등 공개된 사진의 URL을 넣어 주세요. 학생 사진은 사용할 수 없습니다.</p>
                                 <input value={newSessionData.portraitImageUrl} onChange={e => setNewSessionData({ ...newSessionData, portraitImageUrl: e.target.value })} placeholder="인물 사진 URL" style={{ width: '100%', padding: '0.6rem', marginBottom: '0.5rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                {newSessionData.portraitImageUrl && (
+                                    <img
+                                        key={newSessionData.portraitImageUrl}
+                                        src={newSessionData.portraitImageUrl}
+                                        alt="인물 사진 미리보기"
+                                        onError={(e) => { e.currentTarget.alt = '⚠️ 사진을 불러올 수 없어요. URL을 확인해 주세요.'; }}
+                                        style={{ maxWidth: '100%', maxHeight: '160px', borderRadius: '0.5rem', marginBottom: '0.5rem', background: '#f1f5f9', color: '#b45309', fontSize: '0.85rem' }}
+                                    />
+                                )}
                                 <input value={newSessionData.portraitName} onChange={e => setNewSessionData({ ...newSessionData, portraitName: e.target.value })} placeholder="인물 이름 (예: 유관순)" style={{ width: '100%', padding: '0.6rem', marginBottom: '0.5rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
                                 <input value={newSessionData.portraitDesc} onChange={e => setNewSessionData({ ...newSessionData, portraitDesc: e.target.value })} placeholder="한 줄 소개 (선택)" style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
                             </div>

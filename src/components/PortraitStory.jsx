@@ -125,7 +125,20 @@ const PortraitStory = ({ session, showToast }) => {
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
             {/* 왼쪽: 인물 사진 */}
             <div style={{ flex: '1 1 300px', minWidth: '260px' }}>
-                <img src={session.portraitImageUrl} alt={session.portraitName || '인물 사진'} style={{ width: '100%', maxHeight: '420px', objectFit: 'contain', borderRadius: '1rem', boxShadow: 'var(--shadow)', background: '#f1f5f9' }} />
+                <img
+                    src={session.portraitImageUrl}
+                    alt={session.portraitName || '인물 사진'}
+                    onError={(e) => {
+                        // 사진 주소가 잘못됐을 때 학생에게 안내 (교사가 URL을 확인하도록)
+                        e.currentTarget.style.display = 'none';
+                        const note = e.currentTarget.nextElementSibling;
+                        if (note) note.style.display = 'flex';
+                    }}
+                    style={{ width: '100%', maxHeight: '420px', objectFit: 'contain', borderRadius: '1rem', boxShadow: 'var(--shadow)', background: '#f1f5f9' }}
+                />
+                <div style={{ display: 'none', alignItems: 'center', justifyContent: 'center', height: '200px', borderRadius: '1rem', background: '#f1f5f9', color: 'var(--text-sub)', textAlign: 'center', padding: '1rem' }}>
+                    사진을 불러올 수 없어요. 😢<br />선생님께 사진 주소를 확인해 달라고 말해 주세요.
+                </div>
                 <h3 style={{ margin: '0.6rem 0 0.2rem' }}>{session.portraitName || '이 인물'}</h3>
                 {session.portraitDesc && <p style={{ margin: 0, color: 'var(--text-sub)' }}>{session.portraitDesc}</p>}
             </div>
