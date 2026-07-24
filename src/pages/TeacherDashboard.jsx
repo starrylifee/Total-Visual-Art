@@ -10,6 +10,7 @@ import ClassSlideshow from '../components/ClassSlideshow';
 import MasterpiecePicker from '../components/MasterpiecePicker';
 import RubricEditor from '../components/RubricEditor';
 import AppreciationMonitor from '../components/AppreciationMonitor';
+import OperatorBoard from '../components/OperatorBoard';
 import { DEFAULT_RUBRIC } from '../data/masterpieces';
 import { Plus, Users, Award, Palette, Play, Monitor, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { collection, query, where, getDocs, collectionGroup } from 'firebase/firestore';
@@ -62,6 +63,8 @@ const TeacherDashboard = () => {
     const [rubricSession, setRubricSession] = useState(null);
     // 감상 현황 모니터링 대상 세션 (모듈 1)
     const [monitorSession, setMonitorSession] = useState(null);
+    // 영상 오퍼레이터 보드 대상 세션 (모듈 3)
+    const [operatorSession, setOperatorSession] = useState(null);
     const [isLoadingClasses, setIsLoadingClasses] = useState(true);
     const [isLoadingClassDetail, setIsLoadingClassDetail] = useState(false);
     const [isCreatingClass, setIsCreatingClass] = useState(false);
@@ -452,6 +455,15 @@ const TeacherDashboard = () => {
                 />
             )}
 
+            {/* 영상 오퍼레이터 보드 모달 */}
+            {operatorSession && selectedClass && (
+                <OperatorBoard
+                    classId={selectedClass.id}
+                    session={operatorSession}
+                    onClose={() => setOperatorSession(null)}
+                />
+            )}
+
             {/* Classes Tab */}
             {activeTab === 'classes' && (
                 <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
@@ -563,6 +575,14 @@ const TeacherDashboard = () => {
                                                                     style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #6366f1', background: 'white', color: '#6366f1', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
                                                                 >
                                                                     📊 감상 현황
+                                                                </button>
+                                                            )}
+                                                            {sess.features?.portrait && (
+                                                                <button
+                                                                    onClick={() => setOperatorSession(sess)}
+                                                                    style={{ padding: '0.35rem 0.75rem', borderRadius: '999px', border: '1px solid #0891b2', background: 'white', color: '#0891b2', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600' }}
+                                                                >
+                                                                    🎬 영상 보드
                                                                 </button>
                                                             )}
                                                         </div>
