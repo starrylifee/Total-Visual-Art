@@ -3,6 +3,7 @@ import { geminiService } from '../services/gemini.js';
 import { studentAuthService } from '../services/studentAuthService';
 import DeepAppreciation from './DeepAppreciation';
 import RestoreChallenge from './RestoreChallenge';
+import PortraitStory from './PortraitStory';
 import { Image, MessageSquare, PenTool, Loader, Send, X, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
 const Toast = ({ message, type, onClose }) => {
@@ -27,6 +28,7 @@ const QUEUE_POLL_MS = 10000;
 const StudentWorkspace = ({ session }) => {
     const features = session.features || {};
     const firstTab = features.deepAppreciation ? 'deep'
+        : features.portrait ? 'portrait'
         : features.imageGen ? 'creation'
         : features.vision ? 'vision'
         : features.appreciation ? 'appreciation'
@@ -195,6 +197,11 @@ const StudentWorkspace = ({ session }) => {
                         <Image size={16} /> 🧩 복원 챌린지
                     </button>
                 )}
+                {features.portrait && (
+                    <button className={activeTab === 'portrait' ? 'btn-primary' : 'btn-secondary'} onClick={() => setActiveTab('portrait')}>
+                        <Image size={16} /> 🎬 인물의 하루
+                    </button>
+                )}
             </div>
 
             <div className="workspace-content" style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: '1rem', padding: '2rem', background: '#fff', overflowY: 'auto' }}>
@@ -342,6 +349,10 @@ const StudentWorkspace = ({ session }) => {
 
                 {activeTab === 'appreciation' && (
                     <RestoreChallenge session={session} showToast={showToast} />
+                )}
+
+                {activeTab === 'portrait' && (
+                    <PortraitStory session={session} showToast={showToast} />
                 )}
             </div>
         </div>

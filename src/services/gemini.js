@@ -70,6 +70,12 @@ export const geminiService = {
         return data; // { differences: [..2], praise }
     },
 
+    // 모듈 3: 영상 프롬프트 수정 코멘트 (고쳐 주지 않고 단서 질문만)
+    coachVideoPrompt: async (observation, prompt, portraitName) => {
+        const data = await callAI({ action: "video-coach", observation, prompt, portraitName });
+        return data; // { good, tips: [..2] }
+    },
+
     // Chatbot (Multi-turn)
     chatWithPersona: async (history, message, systemInstruction) => {
         try {

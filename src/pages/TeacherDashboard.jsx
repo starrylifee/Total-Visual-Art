@@ -54,7 +54,8 @@ const TeacherDashboard = () => {
     const emptySessionData = {
         title: '', visionPrompt: '', textPrompt: '', chatbotInstruction: '', referenceImageUrl: '', referenceVideoUrl: '',
         masterpieceId: null,
-        features: { deepAppreciation: true, vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true }
+        portraitImageUrl: '', portraitName: '', portraitDesc: '',
+        features: { deepAppreciation: true, vision: true, imageGen: true, chat: true, appreciation: true, textHelp: true, portrait: false }
     };
     const [newSessionData, setNewSessionData] = useState(emptySessionData);
     // 루브릭 편집 대상 세션 (모듈 1: 감상 루브릭 공동 설정)
@@ -370,6 +371,9 @@ const TeacherDashboard = () => {
                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
                                 <input type="checkbox" checked={newSessionData.features?.textHelp} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, textHelp: e.target.checked } })} /> 표현 도우미
                             </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.9rem' }}>
+                                <input type="checkbox" checked={newSessionData.features?.portrait} onChange={e => setNewSessionData({ ...newSessionData, features: { ...newSessionData.features, portrait: e.target.checked } })} /> 인물의 하루(영상)
+                            </label>
                         </div>
 
                         <input value={newSessionData.title} onChange={e => setNewSessionData({ ...newSessionData, title: e.target.value })} placeholder="활동 제목 (예: 반 고흐 감상)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
@@ -404,6 +408,16 @@ const TeacherDashboard = () => {
                                 )}
                                 <input value={newSessionData.referenceVideoUrl || ''} onChange={e => setNewSessionData({ ...newSessionData, referenceVideoUrl: e.target.value })} placeholder="참고 영상 URL (YouTube 등, 선택)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
                             </>
+                        )}
+
+                        {newSessionData.features?.portrait && (
+                            <div style={{ marginBottom: '0.75rem', padding: '0.75rem', background: '#fdf4ff', borderRadius: '0.5rem' }}>
+                                <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>🎬 인물의 하루 — 인물 사진 등록</p>
+                                <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: 'var(--text-sub)' }}>역사 인물 등 공개된 사진의 URL을 넣어 주세요. 학생 사진은 사용할 수 없습니다.</p>
+                                <input value={newSessionData.portraitImageUrl} onChange={e => setNewSessionData({ ...newSessionData, portraitImageUrl: e.target.value })} placeholder="인물 사진 URL" style={{ width: '100%', padding: '0.6rem', marginBottom: '0.5rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                <input value={newSessionData.portraitName} onChange={e => setNewSessionData({ ...newSessionData, portraitName: e.target.value })} placeholder="인물 이름 (예: 유관순)" style={{ width: '100%', padding: '0.6rem', marginBottom: '0.5rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                <input value={newSessionData.portraitDesc} onChange={e => setNewSessionData({ ...newSessionData, portraitDesc: e.target.value })} placeholder="한 줄 소개 (선택)" style={{ width: '100%', padding: '0.6rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                            </div>
                         )}
 
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>

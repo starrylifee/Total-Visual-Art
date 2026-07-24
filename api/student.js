@@ -15,6 +15,8 @@
  *  { action: "deep-get",  token }                                    -> 내 1·2차 감상 불러오기(재입장 복원)
  *  { action: "restore-save", token, patch }                          -> 복원 챌린지 진행 저장(모듈2, 화이트리스트 merge)
  *  { action: "restore-get",  token }                                 -> 내 복원 챌린지 불러오기
+ *  { action: "portrait-save", token, patch }                         -> 인물의 하루 진행 저장(모듈3)
+ *  { action: "portrait-get",  token }                                -> 내 인물의 하루 불러오기(영상 URL 포함)
  */
 import { adminDb, signStudentToken, verifyStudentToken, hashPassword, makeSalt } from "./_lib.js";
 import { FieldValue } from "firebase-admin/firestore";
@@ -60,6 +62,9 @@ function sessionInfo(r) {
         referenceVideoUrl: s.referenceVideoUrl || "",
         masterpieceId: s.masterpieceId || null,
         rubric: Array.isArray(s.rubric) ? s.rubric : [],
+        portraitImageUrl: s.portraitImageUrl || "",
+        portraitName: s.portraitName || "",
+        portraitDesc: s.portraitDesc || "",
     };
 }
 
@@ -337,6 +342,55 @@ export default async function handler(req, res) {
                 const x = snap.data();
                 delete x.updatedAt;
                 return res.status(200).json({ data: x });
+            }
+
+            // 모듈 3: 인물의 하루 (감정·상황·의상 관찰 → 영상 프롬프트). 학생당 문서 1개
+            // 영상 URL(videoUrl)은 교사가 오퍼레이터 보드에서 직접 기록 — 학생은 저장 불가
+            case "portrait-save": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const src = body.patch || {};
+                const patch = {};
+                for (const key of ["feelings", "situation", "clothes", "prompt", "aiComment"]) {
+                    if (src[key] !== undefined) {
+                        const v = String(src[key]).trim();
+                        if (v.length > 3000) return res.status(400).json({ error: "글이 너무 길어요. 조금 줄여 주세요." });
+                        patch[key] = v;
+                    }
+                }
+                if (src.submitted === true) patch.status = "submitted";
+                if (!Object.keys(patch).length) return res.status(400).json({ error: "저장할 내용이 없습니다." });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                await db.doc(`classes/${classId}/sessions/${sessionId}/videoPrompts/${studentIdOf(studentNo)}`).set({
+                    studentId: studentIdOf(studentNo),
+                    studentName: `${studentNo}번`,
+                    ...patch,
+                    updatedAt: FieldValue.serverTimestamp(),
+                }, { merge: true });
+                return res.status(200).json({ ok: true });
+            }
+
+            case "portrait-get": {
+                const r = await requireStudent(db, body.token);
+                if (r.error) return res.status(r.status).json({ error: r.error });
+
+                const { classId, sessionId, studentNo } = r.auth;
+                const snap = await db.doc(`classes/${classId}/sessions/${sessionId}/videoPrompts/${studentIdOf(studentNo)}`).get();
+                if (!snap.exists) return res.status(200).json({ data: null });
+                const x = snap.data();
+                return res.status(200).json({
+                    data: {
+                        feelings: x.feelings || "",
+                        situation: x.situation || "",
+                        clothes: x.clothes || "",
+                        prompt: x.prompt || "",
+                        aiComment: x.aiComment || "",
+                        status: x.status || "",
+                        videoUrl: x.videoUrl || "",
+                    },
+                });
             }
 
             default:

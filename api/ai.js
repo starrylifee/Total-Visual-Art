@@ -10,6 +10,7 @@
  *  { action: "scaffold", firstText, rubric, masterpiece }           -> { questions: [...] }  (모듈1 감상 비계)
  *  { action: "feldman",  firstText, secondText, rubric }            -> { level, reason }     (모듈1 초벌 판정, 교사 전용)
  *  { action: "compare",  queueId }                                  -> { differences, praise } (모듈2 원본 vs 생성 비교, 학생 토큰)
+ *  { action: "video-coach", observation, prompt, portraitName }     -> { good, tips } (모듈3 영상 프롬프트 비계)
  */
 import { GoogleGenAI } from "@google/genai";
 import { authenticateRequest, adminDb } from "./_lib.js";
@@ -215,6 +216,50 @@ JSON 배열로만 답하세요. 예: ["질문1?", "질문2?", "질문3?"]`;
                     return res.status(200).json({ differences, praise: String(parsed.praise || "").slice(0, 300) });
                 } catch {
                     return res.status(500).json({ error: "비교 결과를 만들지 못했어요. 다시 시도해 주세요." });
+                }
+            }
+
+            // 모듈 3: 영상 프롬프트 수정 코멘트 — 고쳐 주지 않고 더 구체적으로 만들 단서만 준다 (비계)
+            case "video-coach": {
+                const { observation, prompt: videoPrompt, portraitName } = body;
+                if (!videoPrompt || String(videoPrompt).trim().length < 10) {
+                    return res.status(400).json({ error: "영상 설명을 먼저 조금 더 적어 주세요." });
+                }
+                const obs = observation || {};
+                const coachPrompt = `당신은 초등학생의 영상 만들기 수업을 돕는 선생님입니다.
+학생이 인물 사진을 관찰한 뒤, 그 인물의 '평범한 하루'를 담은 짧은 영상을 만들기 위한 설명(프롬프트)을 썼습니다.
+
+[인물]
+${String(portraitName || "관찰한 인물").slice(0, 200)}
+
+[학생의 관찰]
+- 표정과 감정: ${String(obs.feelings || "").slice(0, 500)}
+- 상황과 배경: ${String(obs.situation || "").slice(0, 500)}
+- 옷차림과 물건: ${String(obs.clothes || "").slice(0, 500)}
+
+[학생이 쓴 영상 설명]
+"${String(videoPrompt).slice(0, 2000)}"
+
+[코멘트 규칙]
+- good: 잘한 점 1가지를 칭찬. 한 문장.
+- tips: 영상 설명을 더 좋게 만들 단서 질문 2가지. 대신 써 주지 말고, 학생이 스스로 고치도록 물어보세요.
+  (장면이 그려지는지: 장소·시간·행동·표정이 있는지 / 관찰한 내용이 설명에 들어갔는지를 중심으로)
+- 초등학생이 이해할 쉬운 한국어, 각 한 문장.
+
+JSON으로만 답하세요: {"good": "...", "tips": ["...?", "...?"]}`;
+
+                const response = await ai.models.generateContent({
+                    model: TEXT_MODEL,
+                    contents: coachPrompt,
+                    config: { responseMimeType: "application/json" },
+                });
+                try {
+                    const parsed = JSON.parse(response.text);
+                    const tips = (parsed.tips || []).map((t) => String(t).slice(0, 300)).slice(0, 2);
+                    if (!tips.length) throw new Error("empty");
+                    return res.status(200).json({ good: String(parsed.good || "").slice(0, 300), tips });
+                } catch {
+                    return res.status(500).json({ error: "코멘트를 만들지 못했어요. 다시 시도해 주세요." });
                 }
             }
 

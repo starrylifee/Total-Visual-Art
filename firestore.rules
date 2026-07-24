@@ -94,6 +94,12 @@ service cloud.firestore {
           allow read: if isClassTeacher(classId);
           allow create, update, delete: if false;
         }
+
+        // 영상 프롬프트(모듈3): 학생 제출은 서버 경유, 교사는 열람 + 영상 URL 등록(update)
+        match /videoPrompts/{docId} {
+          allow read, update: if isClassTeacher(classId);
+          allow create, delete: if false;
+        }
       }
     }
   }

@@ -80,6 +80,15 @@ export const studentAuthService = {
         return data.data;
     },
 
+    // 모듈 3: 인물의 하루 진행 저장/복원
+    savePortrait: (patch) =>
+        call({ action: "portrait-save", token: localStorage.getItem(TOKEN_KEY), patch }),
+
+    getPortrait: async () => {
+        const data = await call({ action: "portrait-get", token: localStorage.getItem(TOKEN_KEY) });
+        return data.data;
+    },
+
     getInfo: () => {
         try {
             return JSON.parse(localStorage.getItem(INFO_KEY));
