@@ -17,13 +17,13 @@ const Home = () => {
                 background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
                 borderRadius: '50%',
                 padding: '2rem',
-                boxShadow: '0 20px 40px rgba(244, 114, 182, 0.3)'
+                boxShadow: '0 20px 40px rgba(67, 56, 202, 0.3)'
             }}>
                 <Palette size={64} color="#fff" />
             </div>
 
             <header className="hero">
-                <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎨 우리 반 미술 교실</h1>
+                <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎨 봄·봄·봄 스튜디오</h1>
                 <p style={{ fontSize: '1.2rem', color: 'var(--text-sub)' }}>
                     AI와 함께 감상하고, 창작하고, 나누어요!
                 </p>
@@ -41,7 +41,7 @@ const Home = () => {
                     textDecoration: 'none',
                     fontWeight: '600',
                     fontSize: '1.2rem',
-                    boxShadow: '0 4px 15px rgba(244, 114, 182, 0.4)'
+                    boxShadow: '0 4px 15px rgba(67, 56, 202, 0.35)'
                 }}>
                     <Sparkles size={20} />
                     학생 입장 (활동 코드)

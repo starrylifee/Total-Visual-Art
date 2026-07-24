@@ -4,8 +4,18 @@ const ThemeContext = createContext();
 
 // Available themes
 export const themes = {
+    bombom: {
+        name: '봄봄봄 모던 (기본)',
+        primary: '#4338ca',
+        primaryHover: '#3730a3',
+        bgColor: '#f8fafc',
+        textMain: '#1e293b',
+        textSub: '#64748b',
+        cardBg: '#ffffff',
+        accent: '#0891b2'
+    },
     pink: {
-        name: '파스텔 핑크 (기본)',
+        name: '파스텔 핑크',
         primary: '#f472b6',
         primaryHover: '#ec4899',
         bgColor: '#fdf2f8',
@@ -47,7 +57,7 @@ export const themes = {
 };
 
 export const ThemeProvider = ({ children }) => {
-    const [currentTheme, setCurrentTheme] = useState('pink');
+    const [currentTheme, setCurrentTheme] = useState('bombom');
 
     // Apply theme to CSS variables
     useEffect(() => {

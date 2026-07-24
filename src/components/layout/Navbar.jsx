@@ -1,11 +1,14 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Paintbrush, LogIn, LogOut, Home, BookOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    // 학생 화면(/join, /student/*)에서는 교사용 로그인 버튼을 숨긴다
+    const isStudentRoute = location.pathname.startsWith('/join') || location.pathname.startsWith('/student');
 
     const handleLogout = async () => {
         try {
@@ -21,7 +24,7 @@ const Navbar = () => {
             <div className="nav-container">
                 <Link to="/" className="nav-logo">
                     <Paintbrush size={24} />
-                    <span>우리 반 미술 교실</span>
+                    <span>봄·봄·봄 스튜디오</span>
                 </Link>
                 <div className="nav-links">
                     <Link to="/" className="nav-item" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -43,7 +46,7 @@ const Navbar = () => {
                                 </button>
                             </div>
                         </>
-                    ) : (
+                    ) : !isStudentRoute && (
                         <Link to="/login" className="btn-login" style={{ textDecoration: 'none' }}>
                             <LogIn size={18} />
                             <span>로그인</span>
