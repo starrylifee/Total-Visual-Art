@@ -171,7 +171,7 @@ classes/{classId}                   # teacherId, 학급명
 - 모듈 4 완료: `StoryboardStudio.jsx` — 갤러리 선택(공개 작품, 번호만) → 한 줄 감상 → 3~4컷 편집 → storyboard-polish(컷 보존+카메라 표현) → `videoPrompts/{sno}_sb` 제출 → 오퍼레이터 보드 재사용(종류 배지). 운영 E2E 33/33. polish 품질: 3컷을 순서 그대로 이으며 '카메라가 부드럽게 옆으로 이동' 등 연출 표현만 보탬, tip('어떤 소리가 나면 더 좋을까?') 적절
 - **다음 작업**: 모듈 5 — 작품 사진 업로드 → AI Vision 루브릭 초벌 → 교사 확정 → 성장 다짐 (3주차 마지막)
 - 모듈 5 완료 (3주차 전체 마감): 학생 `ArtworkReview.jsx` + 교사 `ArtReviewBoard.jsx` + artwork-review/save/get. 확정 전 다짐은 서버가 400으로 차단. 운영 E2E 39/39. 초벌 품질: 빈 이미지에 met=false + 나무라지 않는 제안형 코멘트("멋진 그림으로 이야기를 들려주면 어떨까요?") 확인
-- 미배포 규칙: artworkReviews 교사 열람/update — **규칙 재배포 필요**
+- 규칙 배포 완료(사용자 직접 실행): artworkReviews 교사 열람/update 운영 반영 — 이로써 미배포 규칙 없음
 - **다음 작업**: 4주차 — 3D 갤러리·PDF 연결, 외부 링크 섹션, 파비콘+OG, 화면 점검(전자칠판·크롬북), 키보드 UX, 앱뜰 등록, 연구 평가 모듈(사전·사후 5문항+CSV)
 
 ## 6. 비용·제약 메모
