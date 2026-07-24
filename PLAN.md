@@ -148,6 +148,15 @@ classes/{classId}                   # teacherId, 학급명
 - firestore.rules 배포 완료(사용자가 직접 `firebase deploy --only firestore:rules` 실행) — 학생 직접 접근 차단 규칙 운영 반영됨
 - **다음 작업**: 2주차 — 명화 16종 DB 구축부터 (모듈 1·2: 루브릭 공동 설정, 1차 감상→AI 비계→2차 감상, 복원 챌린지)
 
+### 2026-07-24 (2주차)
+- 2주차 모듈 1 완료 (명화 DB + 루브릭 + 감상 비계 + 모니터링):
+  - 명화 16종 DB(`src/data/masterpieces.js`): 서양 12 + 한국 4, 조형 요소·감상 포인트 메타 포함. 이미지는 위키미디어 Special:FilePath(파일명 기반) + width 축소판. 이중섭은 2027년 저작권 만료라 제외
+  - 루브릭 공동 설정(`RubricEditor.jsx`): 펠드만 4단계 기본 템플릿, 전자칠판 모드(글씨 크게, 수업 중 학생 의견 반영 편집), 세션 rubric 필드에 저장
+  - 감상 비계 흐름(`DeepAppreciation.jsx`, features.deepAppreciation): 1차 감상 → AI 질문 3개(scaffold 액션: 루브릭+명화 조형요소+학생 글 인용) → 2차 감상 → 1·2차 비교. `deepAppreciations/{sno_N}` 학생당 1문서, 재입장 복원(deep-get)
+  - 모니터링(`AppreciationMonitor.jsx`): 출석번호 그리드(미시작/1차/2차, 30초 자동 갱신), AI 초벌 판정(feldman 액션, 교사 전용, 1.2초 간격 순차 호출로 분당 한도 보호) → 교사 1~4단계 확정. 판정 프롬프트 로컬 검증: 서술만=1단계, 판단 포함=4단계 정확
+  - firestore.rules: deepAppreciations 교사 read/update 추가 — 사용자가 규칙 배포 완료
+- **다음 작업**: 2주차 모듈 2 — 관찰 글 → 프롬프트 변환 → 이중 승인 생성 연결(기존 감상 루프 탭을 복원 챌린지로 개편), 원본 vs 생성 비교 + AI '다른 점 2가지' 코멘트, 2차 도전
+
 ## 6. 비용·제약 메모
 
 - Gemini 무료 한도: 텍스트는 21명 동시 수업 무리 없음. 이미지 생성은 분당 한도가 있어 승인 큐가 속도 조절 역할
