@@ -57,7 +57,8 @@ const createTextImage = (text, options = {}) => {
         color = '#000000',
         align = 'left',
         paddingPx = 24,
-        scale = 2
+        scale = 2,
+        bg = null // 배경색 지정 시 JPEG로 내보내 용량 대폭 절감 (PNG 대비 1/10 수준)
     } = options;
 
     const widthPx = mmToPx(widthMm, scale);
@@ -75,6 +76,10 @@ const createTextImage = (text, options = {}) => {
 
     const drawContext = canvas.getContext('2d');
     drawContext.clearRect(0, 0, canvas.width, canvas.height);
+    if (bg) {
+        drawContext.fillStyle = bg;
+        drawContext.fillRect(0, 0, canvas.width, canvas.height);
+    }
     drawContext.font = `${fontWeight} ${scaledFontSize}px ${fontFamily}`;
     drawContext.fillStyle = color;
     drawContext.textBaseline = 'top';
@@ -93,7 +98,8 @@ const createTextImage = (text, options = {}) => {
     });
 
     return {
-        dataUrl: canvas.toDataURL('image/png'),
+        dataUrl: bg ? canvas.toDataURL('image/jpeg', 0.85) : canvas.toDataURL('image/png'),
+        format: bg ? 'JPEG' : 'PNG',
         widthMm,
         heightMm: (canvas.height / canvas.width) * widthMm
     };
@@ -104,7 +110,7 @@ const addTextImage = (pdf, text, x, y, options = {}) => {
     const align = options.align || 'left';
     const renderX = align === 'center' ? x - image.widthMm / 2 : align === 'right' ? x - image.widthMm : x;
 
-    pdf.addImage(image.dataUrl, 'PNG', renderX, y, image.widthMm, image.heightMm);
+    pdf.addImage(image.dataUrl, image.format, renderX, y, image.widthMm, image.heightMm);
     return image.heightMm;
 };
 
@@ -307,9 +313,10 @@ const makeFlow = (pdf, margin) => {
 
     const text = (str, opts = {}) => {
         if (!str) return;
-        const image = createTextImage(str, { widthMm: pageWidth - margin * 2, ...opts });
+        // 흰 배경 JPEG로 렌더 — 텍스트 블록당 용량이 PNG의 1/10 수준
+        const image = createTextImage(str, { widthMm: pageWidth - margin * 2, bg: '#ffffff', ...opts });
         ensure(image.heightMm);
-        pdf.addImage(image.dataUrl, 'PNG', margin, state.y, image.widthMm, image.heightMm);
+        pdf.addImage(image.dataUrl, image.format, margin, state.y, image.widthMm, image.heightMm);
         state.y += image.heightMm;
     };
 
@@ -341,9 +348,14 @@ const makeFlow = (pdf, margin) => {
         return true;
     };
 
+    const imageOrNote = async (url, widthMm = 70) => {
+        const ok = await image(url, widthMm);
+        if (!ok) text('(이미지를 불러올 수 없어 생략했습니다)', { fontSize: 8.5, color: '#94a3b8' });
+    };
+
     const gap = (mm = 3) => { state.y += mm; };
 
-    return { text, heading, image, gap, state };
+    return { text, heading, image, imageOrNote, gap, state };
 };
 
 /**
@@ -397,7 +409,7 @@ export async function generateSessionPortfolioPDF(meta, s) {
             flow.text('1차 관찰', { fontSize: 10.5, fontWeight: '700', color: '#334155' });
             flow.text(r.observation1, { fontSize: 10, color: '#111827' });
         }
-        if (r.image1) await flow.image(r.image1, 60);
+        if (r.image1) await flow.imageOrNote(r.image1, 60);
         if (Array.isArray(r.diff1) && r.diff1.length > 0) {
             flow.text('AI가 찾은 다른 점', { fontSize: 10.5, fontWeight: '700', color: '#334155' });
             flow.text(r.diff1.map((d, i) => `${i + 1}. ${d}`).join('\n'), { fontSize: 9.5, color: '#475569' });
@@ -406,7 +418,7 @@ export async function generateSessionPortfolioPDF(meta, s) {
             flow.text('2차 관찰 (보완)', { fontSize: 10.5, fontWeight: '700', color: '#334155' });
             flow.text(r.observation2, { fontSize: 10, color: '#111827' });
         }
-        if (r.image2) await flow.image(r.image2, 60);
+        if (r.image2) await flow.imageOrNote(r.image2, 60);
         if (r.reflection) {
             flow.text('성찰', { fontSize: 10.5, fontWeight: '700', color: '#334155' });
             flow.text(r.reflection, { fontSize: 10, color: '#111827' });
@@ -418,7 +430,7 @@ export async function generateSessionPortfolioPDF(meta, s) {
         flow.heading(`🎨 AI 그림 작품 (${s.artworks.length}점)`);
         for (const art of s.artworks) {
             if (art.prompt) flow.text(`“${art.prompt}”`, { fontSize: 9.5, color: '#475569' });
-            if (art.imageUrl) await flow.image(art.imageUrl, 60);
+            if (art.imageUrl) await flow.imageOrNote(art.imageUrl, 60);
         }
     }
 
@@ -462,7 +474,7 @@ export async function generateSessionPortfolioPDF(meta, s) {
     const ar = s.artReview;
     if (ar && (ar.imageDataUrl || ar.pledge)) {
         flow.heading('🖌️ 내 작품 평가와 성장 다짐');
-        if (ar.imageDataUrl) await flow.image(ar.imageDataUrl, 70);
+        if (ar.imageDataUrl) await flow.imageOrNote(ar.imageDataUrl, 70);
         if (ar.aiReview?.items?.length) {
             flow.text('루브릭 피드백 (AI 초벌)', { fontSize: 10.5, fontWeight: '700', color: '#334155' });
             flow.text(
