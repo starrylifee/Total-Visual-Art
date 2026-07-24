@@ -164,7 +164,7 @@ classes/{classId}                   # teacherId, 학급명
   - firestore.rules에 restoreChallenges 교사 열람 추가 — **규칙 재배포 필요**
 - **다음 작업**: 3주차 — 모듈 3(인물 사진 감상 + 영상 프롬프트), 모듈 4(스토리보드), 교사 오퍼레이터 보드, 모듈 5(AI Vision 루브릭 초벌)
 - 3주차 모듈 3 완료: `PortraitStory.jsx`(감정·상황·의상 관찰 폼 → 영상 프롬프트 → AI 비계 코멘트 → 제출 → 교사 영상 URL 등록 시 감상, 15초 폴링). `/api/ai` video-coach(칭찬1+단서 질문2, 대신 안 써 줌). `videoPrompts/{sno_N}` 저장(오퍼레이터 보드가 이 컬렉션 사용 예정). 운영 E2E 27/27. 코멘트 품질: 관찰에 쓴 '굳센 표정·슬픈 눈빛'을 영상 설명에 반영하라는 단서 질문 정확
-- 미배포 규칙 누적: restoreChallenges·videoPrompts 교사 열람/update — **규칙 재배포 필요**
+- 규칙 배포 완료(사용자 직접 실행): restoreChallenges 교사 열람 + videoPrompts 교사 열람/update 운영 반영
 - **다음 작업**: 3주차 계속 — 교사 오퍼레이터 보드(프롬프트 목록·복사 → 영상 URL 등록 → 학생 공유)를 모듈 4보다 먼저(모듈 3 흐름 완결), 그 다음 모듈 4(스토리보드)
 
 ## 6. 비용·제약 메모
