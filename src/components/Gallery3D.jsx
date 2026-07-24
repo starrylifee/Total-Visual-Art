@@ -43,20 +43,19 @@ function ArtworkFrame({ position, imageUrl, title, onClick }) {
     );
 }
 
-// Gallery Wall
+// Gallery Wall — 작품 수에 맞춰 벽을 넓히고 최대 2줄로 건다 (바닥 아래로 내려가지 않게)
 function GalleryWall({ artworks = [], onSelectArtwork }) {
-    const wallWidth = 20;
-    const wallHeight = 8;
-
-    // Calculate positions for artworks in a grid
-    const cols = 4;
     const spacing = 3;
+    const cols = Math.max(4, Math.ceil(artworks.length / 2));
+    const wallWidth = cols * spacing + 2;
+    const wallHeight = 8;
+    const rowY = [3.2, 0.2]; // 위 줄 / 아래 줄
 
     return (
         <group>
             {/* Floor */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]}>
-                <planeGeometry args={[30, 30]} />
+                <planeGeometry args={[wallWidth + 10, 30]} />
                 <meshStandardMaterial color="#fdf2f8" />
             </mesh>
 
@@ -72,7 +71,7 @@ function GalleryWall({ artworks = [], onSelectArtwork }) {
                     key={art.id || i}
                     position={[
                         (i % cols - cols / 2 + 0.5) * spacing,
-                        Math.floor(i / cols) * -3 + 1.5,
+                        rowY[Math.floor(i / cols)] ?? 0.2,
                         -4.5
                     ]}
                     imageUrl={art.imageUrl}
@@ -102,7 +101,7 @@ const Gallery3D = ({ artworks = [], onSelectArtwork }) => {
                     enableZoom={true}
                     enableRotate={true}
                     minDistance={3}
-                    maxDistance={15}
+                    maxDistance={Math.max(15, artworks.length * 1.6)}
                     maxPolarAngle={Math.PI / 2}
                 />
             </Canvas>

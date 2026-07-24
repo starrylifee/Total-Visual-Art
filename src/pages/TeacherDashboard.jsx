@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme, themes } from '../context/ThemeContext';
@@ -7,6 +7,10 @@ import { sessionService } from '../services/sessionService';
 import { badgeService } from '../services/badgeService';
 import { imageGenService } from '../services/imageGenService';
 import ClassSlideshow from '../components/ClassSlideshow';
+import { loadSessionOutputs } from '../services/portfolioService';
+
+// three.js가 무거워서 3D 갤러리를 열 때만 내려받는다 (학생 화면 번들 보호)
+const Gallery3D = lazy(() => import('../components/Gallery3D'));
 import MasterpiecePicker from '../components/MasterpiecePicker';
 import RubricEditor from '../components/RubricEditor';
 import AppreciationMonitor from '../components/AppreciationMonitor';
@@ -79,9 +83,14 @@ const TeacherDashboard = () => {
     const [badges, setBadges] = useState([]);
     const [newBadge, setNewBadge] = useState({ name: '', iconUrl: '', description: '' });
 
-    // Slideshow State
+    // Slideshow / 3D 갤러리 / PDF 포트폴리오 State (발표 탭)
     const [classArtworks, setClassArtworks] = useState([]);
     const [slideshowSession, setSlideshowSession] = useState(null);
+    const [presentMode, setPresentMode] = useState('slideshow'); // slideshow | gallery3d | pdf
+    const [sessionOutputs, setSessionOutputs] = useState(null);  // loadSessionOutputs 결과
+    const [isLoadingOutputs, setIsLoadingOutputs] = useState(false);
+    const [galleryPick, setGalleryPick] = useState(null);        // 3D 갤러리에서 클릭한 작품
+    const [pdfBusyNo, setPdfBusyNo] = useState(null);            // PDF 생성 중인 출석번호
 
     // 학생 비밀번호 관리 (활동코드 접속 체계)
     const [registeredStudents, setRegisteredStudents] = useState([]);
@@ -139,6 +148,11 @@ const TeacherDashboard = () => {
         setSelectedClass(cls);
         setShowPasswordPanel(false);
         setRegisteredStudents([]);
+        // 발표 탭 상태 초기화 (다른 학급의 활동·산출물이 남지 않게)
+        setSlideshowSession(null);
+        setClassArtworks([]);
+        setSessionOutputs(null);
+        setGalleryPick(null);
         try {
             const classSessions = await sessionService.getClassSessions(cls.id);
             setSessions(classSessions);
@@ -262,9 +276,53 @@ const TeacherDashboard = () => {
             }));
             setClassArtworks(artworks);
             setSlideshowSession(sessions.find(s => s.id === sessionId));
+            setSessionOutputs(null); // 활동을 바꾸면 산출물 다시 로드
+            setGalleryPick(null);
         } catch (e) {
             console.error("Failed to load artworks", e);
             setClassArtworks([]);
+        }
+    };
+
+    // 3D 갤러리·PDF 모드에서 산출물이 없으면 자동 로드 (활동을 바꾸면 sessionOutputs가 null로 초기화됨)
+    useEffect(() => {
+        if (presentMode !== 'gallery3d' && presentMode !== 'pdf') return;
+        if (!selectedClass || !slideshowSession || sessionOutputs || isLoadingOutputs) return;
+        let cancelled = false;
+        (async () => {
+            setIsLoadingOutputs(true);
+            try {
+                const outputs = await loadSessionOutputs(selectedClass.id, slideshowSession.id);
+                if (!cancelled) setSessionOutputs(outputs);
+            } catch (e) {
+                console.error('Failed to load session outputs', e);
+                if (!cancelled) showToast('산출물을 불러오지 못했습니다.', 'error');
+            } finally {
+                if (!cancelled) setIsLoadingOutputs(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [presentMode, selectedClass, slideshowSession, sessionOutputs, isLoadingOutputs]);
+
+    const handlePresentMode = (mode) => setPresentMode(mode);
+
+    const handleDownloadPortfolio = async (student) => {
+        if (pdfBusyNo) return;
+        setPdfBusyNo(student.no);
+        try {
+            // jspdf도 무거워서 저장 버튼을 눌렀을 때만 내려받는다
+            const { generateSessionPortfolioPDF } = await import('../services/pdfService');
+            await generateSessionPortfolioPDF({
+                className: selectedClass?.name || '',
+                sessionTitle: slideshowSession?.title || '',
+                studentNo: student.no,
+            }, student);
+            showToast(`📄 ${student.no}번 포트폴리오 저장 완료`, 'success');
+        } catch (e) {
+            console.error('PDF 생성 실패', e);
+            showToast('PDF 생성에 실패했습니다.', 'error');
+        } finally {
+            setPdfBusyNo(null);
         }
     };
 
@@ -717,8 +775,8 @@ const TeacherDashboard = () => {
                         <p style={{ color: 'var(--text-sub)', textAlign: 'center', padding: '2rem' }}>👈 먼저 '학급' 탭에서 학급을 선택해주세요.</p>
                     ) : (
                         <div>
-                            <h2 style={{ color: 'var(--text-main)', marginBottom: '1rem' }}>🎬 작품 발표 모드</h2>
-                            <p style={{ color: 'var(--text-sub)', marginBottom: '1rem' }}>활동을 선택하면 학생들의 작품을 슬라이드쇼로 발표할 수 있어요!</p>
+                            <h2 style={{ color: 'var(--text-main)', marginBottom: '1rem' }}>🎬 발표 · 갤러리 · 포트폴리오</h2>
+                            <p style={{ color: 'var(--text-sub)', marginBottom: '1rem' }}>활동을 선택하면 슬라이드쇼 발표, 3D 갤러리 감상, 학생별 PDF 포트폴리오 내보내기를 할 수 있어요.</p>
 
                             {/* Session Selector */}
                             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
@@ -744,19 +802,120 @@ const TeacherDashboard = () => {
                                 ))}
                             </div>
 
-                            {/* Slideshow */}
-                            {classArtworks.length > 0 ? (
-                                <ClassSlideshow artworks={classArtworks} autoPlay={true} interval={5000} />
-                            ) : slideshowSession ? (
-                                <div style={{ textAlign: 'center', padding: '3rem', background: '#f8f8f8', borderRadius: '1rem' }}>
-                                    <p style={{ fontSize: '3rem', margin: 0 }}>🖼️</p>
-                                    <p style={{ color: 'var(--text-sub)' }}>이 활동에는 아직 공개된 작품이 없습니다.</p>
+                            {/* 보기 방식 선택 */}
+                            {slideshowSession && (
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                                    {[
+                                        { key: 'slideshow', label: '🎬 슬라이드쇼' },
+                                        { key: 'gallery3d', label: '🏛️ 3D 갤러리' },
+                                        { key: 'pdf', label: '📄 PDF 포트폴리오' },
+                                    ].map(m => (
+                                        <button
+                                            key={m.key}
+                                            onClick={() => handlePresentMode(m.key)}
+                                            style={{
+                                                padding: '0.6rem 1.2rem', borderRadius: '0.75rem', cursor: 'pointer', fontWeight: '600',
+                                                border: presentMode === m.key ? 'none' : '1px solid #ddd',
+                                                background: presentMode === m.key ? 'var(--primary)' : 'white',
+                                                color: presentMode === m.key ? 'white' : 'var(--text-main)'
+                                            }}
+                                        >{m.label}</button>
+                                    ))}
                                 </div>
-                            ) : (
+                            )}
+
+                            {!slideshowSession ? (
                                 <div style={{ textAlign: 'center', padding: '3rem', background: '#f8f8f8', borderRadius: '1rem' }}>
                                     <p style={{ fontSize: '3rem', margin: 0 }}>👆</p>
                                     <p style={{ color: 'var(--text-sub)' }}>위에서 활동을 선택해주세요.</p>
                                 </div>
+                            ) : presentMode === 'slideshow' ? (
+                                classArtworks.length > 0 ? (
+                                    <ClassSlideshow artworks={classArtworks} autoPlay={true} interval={5000} />
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '3rem', background: '#f8f8f8', borderRadius: '1rem' }}>
+                                        <p style={{ fontSize: '3rem', margin: 0 }}>🖼️</p>
+                                        <p style={{ color: 'var(--text-sub)' }}>이 활동에는 아직 공개된 작품이 없습니다.</p>
+                                    </div>
+                                )
+                            ) : isLoadingOutputs || !sessionOutputs ? (
+                                <div style={{ textAlign: 'center', padding: '3rem', background: '#f8f8f8', borderRadius: '1rem' }}>
+                                    <p style={{ color: 'var(--text-sub)' }}>산출물을 불러오는 중...</p>
+                                </div>
+                            ) : presentMode === 'gallery3d' ? (
+                                sessionOutputs.galleryArtworks.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '3rem', background: '#f8f8f8', borderRadius: '1rem' }}>
+                                        <p style={{ fontSize: '3rem', margin: 0 }}>🏛️</p>
+                                        <p style={{ color: 'var(--text-sub)' }}>아직 전시할 작품이 없습니다. AI 그림을 공개하거나 작품 평가 사진이 올라오면 여기에 전시돼요.</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p style={{ color: 'var(--text-sub)', margin: '0 0 0.75rem', fontSize: '0.9rem' }}>
+                                            🖱️ 마우스로 돌려 보고, 휠로 확대·축소하세요. 작품을 클릭하면 크게 볼 수 있어요. ({sessionOutputs.galleryArtworks.length}점 전시 중)
+                                        </p>
+                                        <Suspense fallback={<div style={{ textAlign: 'center', padding: '3rem', background: '#f8f8f8', borderRadius: '1rem', color: 'var(--text-sub)' }}>3D 갤러리를 준비하는 중...</div>}>
+                                            <Gallery3D artworks={sessionOutputs.galleryArtworks} onSelectArtwork={setGalleryPick} />
+                                        </Suspense>
+                                        {galleryPick && (
+                                            <div
+                                                onClick={() => setGalleryPick(null)}
+                                                style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                            >
+                                                <div style={{ background: 'white', borderRadius: '1rem', padding: '1.5rem', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto', textAlign: 'center' }}>
+                                                    <img src={galleryPick.imageUrl} alt={galleryPick.title} style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: '0.5rem' }} />
+                                                    <h3 style={{ margin: '1rem 0 0.25rem' }}>{galleryPick.title}</h3>
+                                                    {galleryPick.prompt && <p style={{ color: 'var(--text-sub)', margin: 0 }}>{galleryPick.prompt}</p>}
+                                                    <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '0.75rem' }}>화면을 클릭하면 닫혀요</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            ) : (
+                                /* PDF 포트폴리오 */
+                                sessionOutputs.students.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '3rem', background: '#f8f8f8', borderRadius: '1rem' }}>
+                                        <p style={{ fontSize: '3rem', margin: 0 }}>📄</p>
+                                        <p style={{ color: 'var(--text-sub)' }}>아직 이 활동에 제출된 산출물이 없습니다.</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p style={{ color: 'var(--text-sub)', margin: '0 0 1rem', fontSize: '0.9rem' }}>
+                                            학생별로 이 활동의 모든 산출물(감상문·복원 챌린지·AI 작품·영상 프롬프트·작품 평가)을 PDF 한 부로 저장합니다.
+                                        </p>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                                            {sessionOutputs.students.map(st => {
+                                                const parts = [
+                                                    st.deep && '감상',
+                                                    st.restore && '복원',
+                                                    st.artworks.length > 0 && `AI그림 ${st.artworks.length}`,
+                                                    st.portrait && '인물영상',
+                                                    st.storyboard && '스토리보드',
+                                                    st.artReview && '작품평가',
+                                                ].filter(Boolean).join(' · ');
+                                                return (
+                                                    <div key={st.no} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '0.75rem', background: '#f8fafc' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                            <strong style={{ fontSize: '1.1rem' }}>{st.no}번</strong>
+                                                            <button
+                                                                onClick={() => handleDownloadPortfolio(st)}
+                                                                disabled={pdfBusyNo !== null}
+                                                                style={{
+                                                                    padding: '0.4rem 0.9rem', borderRadius: '999px', border: 'none', cursor: pdfBusyNo ? 'wait' : 'pointer',
+                                                                    background: 'var(--primary)', color: 'white', fontWeight: '600', fontSize: '0.85rem',
+                                                                    opacity: pdfBusyNo !== null && pdfBusyNo !== st.no ? 0.5 : 1
+                                                                }}
+                                                            >
+                                                                {pdfBusyNo === st.no ? '만드는 중...' : '📄 PDF 저장'}
+                                                            </button>
+                                                        </div>
+                                                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-sub)' }}>{parts || '산출물 없음'}</p>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )
                             )}
                         </div>
                     )}
