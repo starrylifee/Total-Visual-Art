@@ -391,6 +391,8 @@ const TeacherDashboard = () => {
                         <input
                             value={newClassName}
                             onChange={(e) => setNewClassName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleCreateClass()}
+                            autoFocus
                             placeholder="예: 4학년 1반 미술"
                             style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }}
                         />
@@ -449,7 +451,7 @@ const TeacherDashboard = () => {
                             </label>
                         </div>
 
-                        <input value={newSessionData.title} onChange={e => setNewSessionData({ ...newSessionData, title: e.target.value })} placeholder="활동 제목 (예: 반 고흐 감상)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                        <input value={newSessionData.title} onChange={e => setNewSessionData({ ...newSessionData, title: e.target.value })} autoFocus placeholder="활동 제목 (예: 반 고흐 감상)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
 
                         {newSessionData.features?.vision && (
                             <textarea value={newSessionData.visionPrompt} onChange={e => setNewSessionData({ ...newSessionData, visionPrompt: e.target.value })} placeholder="작품 분석 AI 프롬프트 (예: 이 그림의 색상과 분위기를 분석해주세요)" style={{ width: '100%', padding: '0.75rem', marginBottom: '0.75rem', borderRadius: '0.5rem', border: '1px solid #ddd', minHeight: '60px' }} />
