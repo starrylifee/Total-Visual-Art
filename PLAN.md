@@ -109,9 +109,9 @@ classes/{classId}                   # teacherId, 학급명
 - [x] 파비콘 + OG 이미지 제작 — favicon.svg(봄·봄·봄 점 3개 모티프, 인디고 그라데이션) + apple-touch-icon.png(180) + og.png(1200×630, 카카오톡 공유용). index.html에 OG/twitter 메타, lang=ko, 제목 '봄·봄·봄 스튜디오'(가칭 — 이름 확정 시 index.html·og.png만 교체)
 - [x] 전자칠판(스크롤 없는 한 화면)·크롬북(16:9) 화면 점검, 글씨 크게 — 1366×768 실기기 해상도로 학생 전 탭 + 교사(칠판 모드·감상 현황 30명 그리드·발표 3모드) 브라우저 실점검. 칠판 모드·감상 현황 = 스크롤 없는 한 화면 확인. 점검 중 실버그 3건 수리(아래 로그)
 - [x] 키보드 UX: 엔터 진행, 입력 자동 포커스 — 학생 쪽은 기존에 완비(/join 단계별 포커스+엔터, 모듈별 autoFocus), 교사 모달 보완(새 학급 엔터 생성+포커스, 새 활동 제목 포커스)
-- [ ] 앱뜰에 등록
+- [x] 앱뜰에 등록 — apptteul.vercel.app 공식 앱 갤러리에 '봄·봄·봄 스튜디오'(교과, id 37) 등록. 썸네일은 프로젝트 og.png를 Supabase Storage에 업로드. 등록 경로는 `POST /api/apps`(multipart + ADMIN_PASSWORD_OFFICIAL) — 앱뜰 `/admin` 화면에서도 같은 값 수정·삭제 가능
 - [x] 연구 평가 모듈: 사전·사후 5문항 + AI 초벌 채점 + 교사 확정 + CSV 내보내기 (대조군 학급은 활동코드로 검사만 응시 가능하게) — `ResearchAssessment.jsx`(학생: 한 문항씩, 임시 저장·재입장 복원, 제출 후 잠금) + `AssessmentBoard.jsx`(교사: 사전/사후 전환, 응시 현황 그리드, AI 초벌 채점→0~3점 확정, 다시 풀게 하기, CSV) + `/api/student` assessment-get·save + `/api/ai` assess(교사 전용). 문항은 활동별 편집(RubricEditor 재사용). 운영 E2E 41/41 통과
-- [ ] 최종 커밋 + 푸시 + 배포 확인
+- [x] 최종 커밋 + 푸시 + 배포 확인 — 4주차 전 항목 완료(2026-07-25). 운영 배포·규칙 배포·앱뜰 등록까지 확인
 
 ---
 
@@ -211,7 +211,14 @@ classes/{classId}                   # teacherId, 학급명
 - `assessments/{sno_N}` 문서 하나에 pre/post를 분리 저장 — 사후로 전환해도 사전 답·확정 점수가 그대로 남는다
 - firestore.rules `assessments` 조항 운영 배포 완료(2026-07-25 11:25 UTC, 사용자 직접 실행). 배포 전 대조 결과 운영 규칙에 조항이 빠져 있어 교사 화면이 막히는 상태였음 — **규칙이 바뀐 커밋은 배포 여부를 매번 확인할 것**
 - 운영 E2E 41/41 통과: 문항 전달·임시 저장 복원·제출 잠금·빈 답 거부·교사 규칙(읽기/update 허용, create·delete 차단)·AI 채점(0~3 범위, 빈 답 0점, 학생 토큰 403)·다시 풀기·사후 전환 분리 저장·닫힌 활동 차단. 테스트 학급·코드·계정 삭제 확인(운영 잔재 없음)
-- 남은 항목: ⑤ 앱뜰 등록(사용자 요청으로 뒤로 미룸)
+- 남은 항목: ⑤ 앱뜰 등록
+
+### 2026-07-25 (4주차 ⑤ 앱뜰 등록 — 4주차 전체 완료)
+- 앱뜰(https://apptteul.vercel.app) 공식 앱 갤러리에 '봄·봄·봄 스튜디오' 등록(id 37, 교과, 태그: 미술·감상·AI 이미지·펠드만·수업도구). 사용자 확인 후 게시
+- 등록 방법: 앱뜰 프로젝트(`C:\Project_Codes\20260128 app-tteul`)의 `POST /api/apps` — multipart(password/title/url/description/category/tags/thumbnail), 비밀번호는 `ADMIN_PASSWORD_OFFICIAL`. 카테고리는 교과·학급운영·창체 3개만 허용, 정렬·공개여부 컬럼은 없음(등록 즉시 목록 맨 뒤에 노출)
+- 썸네일은 이 프로젝트의 `public/og.png`를 그대로 업로드 → Supabase Storage 공개 URL(158KB, 200 확인)
+- 앱뜰 홈은 클라이언트에서 `/api/apps`로 목록을 받아 그리므로 HTML 소스에는 이름이 없다(정상). API 목록에서 등록 확인, 전체 35개
+- 이름을 '봄·봄·봄 스튜디오'에서 바꾸면 앱뜰 카드도 `/admin`에서 함께 고쳐야 한다
 
 ## 6. 비용·제약 메모
 
