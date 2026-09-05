@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import Layout from './components/layout/Layout';
@@ -11,6 +11,8 @@ import StudentSession from './pages/StudentSession';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { db } from './services/firebase';
+
+const StudentWorlds = lazy(() => import('./features/student-worlds/StudentWorlds'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -84,6 +86,7 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/worlds" element={<Suspense fallback={<p role="status">그림 세계를 불러오는 중…</p>}><StudentWorlds /></Suspense>} />
               <Route path="/login" element={<Login />} />
               <Route path="/join" element={<StudentJoin />} />
               <Route path="/student/session" element={<StudentSession />} />

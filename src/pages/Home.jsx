@@ -63,6 +63,10 @@ const Home = () => {
                 </Link>
             </div>
 
+            <Link to="/worlds" style={{ color: 'var(--text-main)', fontWeight: 700, textUnderlineOffset: '5px' }}>
+                학생 그림 속으로 · 3D 탐험 시작 →
+            </Link>
+
             <div className="feature-cards" style={{
                 display: 'flex',
                 gap: '1.5rem',

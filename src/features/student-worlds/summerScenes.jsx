@@ -1,0 +1,22 @@
+import Beach from './worlds/Beach';
+import SeaDay from './worlds/SeaDay';
+import DivingPool from './worlds/DivingPool';
+import WaterparkDay from './worlds/WaterparkDay';
+import HappyWaterpark from './worlds/HappyWaterpark';
+import WaterparkPool from './worlds/WaterparkPool';
+import Aquarium from './worlds/Aquarium';
+import SunsetValley from './worlds/SunsetValley';
+import DolmenField from './worlds/DolmenField';
+import Dabotap from './worlds/Dabotap';
+import SoccerField from './worlds/SoccerField';
+import WeekendRoom from './worlds/WeekendRoom';
+import MovingCity from './worlds/MovingCity';
+import RoadHome from './worlds/RoadHome';
+import PhoneBedroom from './worlds/PhoneBedroom';
+import DessertCafe from './worlds/DessertCafe';
+import ChineseRestaurant from './worlds/ChineseRestaurant';
+import BananaMilkRecord from './worlds/BananaMilkRecord';
+import MoonCrater from './worlds/MoonCrater';
+import ConstellationNight from './worlds/ConstellationNight';
+
+export default { beach: Beach, seaDay: SeaDay, divingPool: DivingPool, waterparkDay: WaterparkDay, happyWaterpark: HappyWaterpark, waterparkPool: WaterparkPool, aquarium: Aquarium, sunsetValley: SunsetValley, dolmenField: DolmenField, dabotap: Dabotap, soccerField: SoccerField, weekendRoom: WeekendRoom, movingCity: MovingCity, roadHome: RoadHome, phoneBedroom: PhoneBedroom, dessertCafe: DessertCafe, chineseRestaurant: ChineseRestaurant, bananaMilkRecord: BananaMilkRecord, moonCrater: MoonCrater, constellationNight: ConstellationNight };

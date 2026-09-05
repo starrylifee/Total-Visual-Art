@@ -1,0 +1,18 @@
+import React,{useEffect,useMemo} from 'react';
+import { Edges } from '@react-three/drei';
+import { DoubleSide,MeshStandardMaterial } from 'three';
+import Character from '../Character';import { pencilTexture } from '../materials';
+function Solid({position,scale=[1,1,1],rotation,material,shape='box',walkable=true}){return <mesh position={position} scale={scale} rotation={rotation} material={material} castShadow receiveShadow userData={walkable?{walkable:true}:{nonSolid:true}}>{shape==='box'?<boxGeometry/>:<sphereGeometry args={[1,16,12]}/>} {shape==='box'&&<Edges color="#555254"/>}</mesh>}
+function Drawing({position,color,mat}){return <group position={position}><Solid scale={[2.5,1.7,.12]} material={mat}/><Solid position={[0,0,.08]} scale={[1.8,.9,.04]} material={color} walkable={false}/></group>}
+export default function WeekendRoom(){const m=useMemo(()=>Object.fromEntries(Object.entries({floor:'#8cb66f',wall:'#90bd75',desk:'#9fa5a0',wood:'#986452',blue:'#3777ad',board:'#8f4c3d',white:'#eee9de',yellow:'#dfc94e',pink:'#d6a3af',orange:'#db6e24',cat:'#9b5852',dark:'#4c4c4e'}).map(([k,c],i)=>{const map=pencilTexture(c,470+i);map.repeat.set(['floor','wall','desk'].includes(k)?7:2,['floor','wall','desk'].includes(k)?7:2);return[k,new MeshStandardMaterial({map,roughness:1,side:DoubleSide})]})),[]);useEffect(()=>()=>Object.values(m).forEach(x=>{x.map.dispose();x.dispose()}),[m]);return <group>
+ <Solid position={[0,-.3,0]} scale={[34,.5,34]} material={m.floor}/><Solid position={[0,6,-16]} scale={[34,12,.5]} material={m.wall}/>
+ <group position={[1,0,-5]}><Solid position={[0,3,0]} scale={[12,.45,7]} material={m.desk}/>{[-5,5].flatMap(x=>[-2.5,2.5].map(z=><Solid key={`${x}${z}`} position={[x,1.5,z]} scale={[.45,3,.45]} material={m.wood}/>))}<Solid position={[-1,3.28,0]} scale={[3.6,.08,2.3]} material={m.white}/><Solid position={[1,3.38,0]} scale={[.05,.08,2]} material={m.dark}/></group>
+ <group position={[1,0,2]}><Solid position={[0,1.25,0]} scale={[3.5,.35,3]} material={m.blue}/>{[-1.3,1.3].flatMap(x=>[-1,1].map(z=><Solid key={`${x}${z}`} position={[x,.6,z]} scale={[.3,1.2,.3]} material={m.wood}/>))}</group>
+ <group position={[1,8,-15.3]}><Solid scale={[14,5,.3]} material={m.board}/><Drawing position={[-4,0,.25]} color={m.blue} mat={m.white}/><Drawing position={[0,0,.25]} color={m.yellow} mat={m.white}/><Drawing position={[4,0,.25]} color={m.floor} mat={m.white}/>{[-4,0,4].map((x,i)=><Solid key={x} position={[x,1.7,.5]} scale={[.35,.35,.15]} shape="sphere" material={i?m.orange:m.blue} walkable={false}/>)}</group>
+ <group position={[11,7,-15.2]}><Solid scale={[7,5,.25]} material={m.blue}/><Solid scale={[.18,5,.4]} material={m.dark}/><Solid scale={[7,.18,.4]} material={m.dark}/></group>
+ <group position={[11,0,7]}><Solid position={[0,.8,0]} scale={[8,1.6,7]} material={m.white}/><Solid position={[0,1.65,-2.4]} scale={[6.5,.5,1.4]} material={m.blue}/></group>
+ <Solid position={[-10,.2,8]} scale={[5,.35,5]} material={m.white}/>{[-11,-9].map((x,i)=><Solid key={x} position={[x,.55,8]} scale={[.5,.5,.5]} shape="sphere" material={i?m.dark:m.orange}/>) }
+ <Solid position={[-2,.25,10]} scale={[1.2,.4,1.2]} material={m.white}/><Solid position={[3,.25,10]} scale={[4,.4,2]} material={m.white}/>{[-1,0,1].map((x,i)=><Solid key={x} position={[2+x,.6,10]} scale={[.18,.6,.18]} material={[m.blue,m.yellow,m.orange][i]}/>) }
+ <group position={[12,.6,0]}><Solid scale={[2.4,1.1,1.7]} shape="sphere" material={m.cat}/><Solid position={[-1.4,.7,0]} scale={[.7,.8,.5]} shape="sphere" material={m.cat}/><Solid position={[1.4,.7,0]} scale={[.7,.8,.5]} shape="sphere" material={m.cat}/></group>
+ <group position={[-10,0,-6]} scale={1.5}><Character shirt="#dfc15d" pants="#d87338" variant={3} behavior="wave"/></group>
+ </group>}

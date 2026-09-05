@@ -1,0 +1,12 @@
+import React,{useEffect,useMemo} from 'react';
+import { Edges,Line } from '@react-three/drei';
+import { DoubleSide,MeshStandardMaterial } from 'three';
+import Character from '../Character';import { pencilTexture } from '../materials';
+function Solid({position,scale=[1,1,1],rotation,material,shape='box',walkable=true}){return <mesh position={position} scale={scale} rotation={rotation} material={material} castShadow receiveShadow userData={walkable?{walkable:true}:{nonSolid:true}}>{shape==='box'?<boxGeometry/>:shape==='sphere'?<sphereGeometry args={[1,16,12]}/>:<cylinderGeometry args={[1,1,1,10]}/>} {shape==='box'&&<Edges color="#4f5552"/>}</mesh>}
+function Goal({x,material,net}){return <group position={[x,0,0]}><Solid position={[0,1.5,-4]} scale={[.18,3,.18]} material={material}/><Solid position={[0,1.5,4]} scale={[.18,3,.18]} material={material}/><Solid position={[0,3,0]} scale={[.18,.18,8.2]} material={material}/>{[-3,-2,-1,0,1,2,3].map(z=><Solid key={z} position={[x<0?-.6: .6,1.5,z]} scale={[.03,3,.03]} material={net}/>)}</group>}
+export default function SoccerField(){const m=useMemo(()=>Object.fromEntries(Object.entries({grass:'#87aa88',line:'#e8e7dc',black:'#333536',pink:'#bd3c70'}).map(([k,c],i)=>{const map=pencilTexture(c,430+i);map.repeat.set(k==='grass'?10:2,k==='grass'?10:2);return[k,new MeshStandardMaterial({map,roughness:1,side:DoubleSide})]})),[]);useEffect(()=>()=>Object.values(m).forEach(x=>{x.map.dispose();x.dispose()}),[m]);return <group>
+ <Solid position={[0,-.3,0]} scale={[38,.5,28]} material={m.grass}/><Line points={[[0,.03,-14],[0,.03,14]]} color="#323536" lineWidth={5}/><mesh position={[0,.04,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[2.4,2.52,48]}/><meshBasicMaterial color="#343637"/></mesh>
+ <Goal x={-16} material={m.black} net={m.line}/><Goal x={16} material={m.black} net={m.line}/>
+ <group position={[-6,0,-6]} scale={1.45} rotation={[0,.7,0]}><Character shirt="#d2d83f" pants="#49789d" variant={1} behavior="wave"/></group><group position={[7,0,7]} scale={1.5} rotation={[0,-1.2,0]}><Character shirt="#3d70a8" pants="#3d70a8" variant={2} behavior="wave"/></group>
+ <Solid position={[-2,1.8,-3]} scale={[.42,.42,.42]} shape="sphere" material={m.pink} walkable={false}/>{Array.from({length:8},(_,i)=><Solid key={i} position={[-2.6-i*.6,1.55-i*.1,-3.4-i*.38]} scale={[.12,.12,.12]} shape="sphere" material={m.black} walkable={false}/>) }
+ </group>}
