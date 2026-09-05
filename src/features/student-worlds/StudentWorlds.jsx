@@ -112,12 +112,12 @@ function Exploration({ world, leave, choose }) {
       </div>
       <p className="sw-key-help"><b>W A S D</b> / 방향키 · 이동　<b>Space</b> · 2단 점프<br /><b>Q E</b> · 좌우　<b>I K</b> · 위아래 <span>점프를 두 번 눌러 물체 위로!　R · 처음 위치</span></p>
       <div className="sw-turn">
-        <button className="sw-control sw-jump" aria-label={position.swimming ? '힘차게 헤엄치기' : '점프'} onClick={() => { controls.current.jumpQueued = true; }}>{position.swimming ? '힘차게 ≋' : '2단 점프 ↑'}</button>
+        <button className="sw-control sw-jump" aria-label={position.swimming ? '수면 도약' : '점프'} onClick={() => { controls.current.jumpQueued = true; }}>{position.swimming ? '수면 2단 도약 ↑' : '2단 점프 ↑'}</button>
         <ControlButton action="lookUp" label="위 보기" controls={controls}>⌃</ControlButton><ControlButton action="lookDown" label="아래 보기" controls={controls}>⌄</ControlButton>
         <ControlButton action="turnLeft" label="시점 왼쪽 회전" controls={controls}>↶</ControlButton><ControlButton action="turnRight" label="시점 오른쪽 회전" controls={controls}>↷</ControlButton><small>둘러보기</small>
       </div>
     </div>
-    <span className="sw-ready" role="status">{failed ? '다시 입장해 주세요' : ready ? position.swimming ? '수영 중 · Space로 힘차게 젓기' : (config.readyText || '탐험 중 · 바다에 들어가면 수영해요') : '준비 중'}</span>
+    <span className="sw-ready" role="status">{failed ? '다시 입장해 주세요' : ready ? position.swimming ? '수영 중 · Space 두 번으로 참치처럼 도약' : (config.readyText || '탐험 중 · 바다에 들어가면 수영해요') : '준비 중'}</span>
     {compare && <div className="sw-modal" role="dialog" aria-modal="true" aria-label="학생 원본 그림" onKeyDown={e => { if (e.key === 'Tab') { e.preventDefault(); closeRef.current?.focus(); } }}>
       <div className="sw-modal-card"><header><div><span className="sw-eyebrow">이 세계가 시작된 한 장</span><h2>{world.title}</h2></div>
         <button ref={closeRef} onClick={() => { setCompare(false); compareTrigger.current?.focus(); }}>닫기 ×</button></header>

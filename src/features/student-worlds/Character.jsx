@@ -12,7 +12,7 @@ function Bone({ length, radius, color }) {
 
 // A reusable articulated character. Each forearm/shin is parented to its joint.
 export default function Character({ position = [0, 0, 0], rotation = 0, shirt = '#ed795f', variant = 0,
-  walking = false, swimming = false, behavior = 'idle', motion, paused = false, goggles = false, pants, patterned = false, barefoot = false }) {
+  walking = false, swimming = false, waterLeaping = false, behavior = 'idle', motion, paused = false, goggles = false, pants, patterned = false, barefoot = false }) {
   const root = useRef(); const body = useRef(); const head = useRef(); const eyes = useRef();
   const joints = useRef({}); const time = useRef(variant * 1.73);
   const wasAir = useRef(false); const landing = useRef(0);
@@ -27,7 +27,8 @@ export default function Character({ position = [0, 0, 0], rotation = 0, shirt = 
     if (paused || !body.current) return;
     const dt = Math.min(delta, 0.05); time.current += dt;
     const t = time.current;
-    const air = !swimming && (motion?.current?.jumpsUsed > 0);
+    const air = !swimming && !waterLeaping && (motion?.current?.jumpsUsed > 0);
+    const swimPose = swimming || waterLeaping;
     if (wasAir.current && !air) landing.current = 0.2;
     wasAir.current = air; landing.current = Math.max(0, landing.current - dt);
     const blend = 1 - Math.exp(-14 * dt);
@@ -37,10 +38,10 @@ export default function Character({ position = [0, 0, 0], rotation = 0, shirt = 
     const resting = behavior === 'rest';
     for (const side of [-1, 1]) {
       const tag = side === -1 ? 'L' : 'R';
-      let hip = seated ? -1.25 : swimming ? gait * side * 0.25 : air ? -0.45 - side * 0.18 : gait * side * 0.52;
-      let knee = seated ? 1.45 : swimming ? 0.3 + Math.max(0, -gait * side) * 0.4 : air ? 0.95 : Math.max(0, -gait * side) * 0.8;
-      let shoulder = swimming ? -1.5 + Math.sin(phase + side * Math.PI / 2) * 1.6 : air ? -0.7 : -gait * side * 0.5;
-      let elbow = swimming ? -0.7 - Math.sin(phase + side) * 0.55 : air ? -0.9 : -0.18 - Math.max(0, gait * side) * 0.35;
+      let hip = seated ? -1.25 : waterLeaping ? 0.08 * side : swimming ? gait * side * 0.25 : air ? -0.45 - side * 0.18 : gait * side * 0.52;
+      let knee = seated ? 1.45 : waterLeaping ? 0.06 : swimming ? 0.3 + Math.max(0, -gait * side) * 0.4 : air ? 0.95 : Math.max(0, -gait * side) * 0.8;
+      let shoulder = waterLeaping ? -2.8 : swimming ? -1.5 + Math.sin(phase + side * Math.PI / 2) * 1.6 : air ? -0.7 : -gait * side * 0.5;
+      let elbow = waterLeaping ? -0.08 : swimming ? -0.7 - Math.sin(phase + side) * 0.55 : air ? -0.9 : -0.18 - Math.max(0, gait * side) * 0.35;
       let spread = side * -0.1;
       if (behavior === 'wave' && side === 1) { shoulder = -2.35; elbow = -0.35 + Math.sin(t * 4) * 0.4; spread = -0.35; }
       if (behavior === 'chat') { shoulder = -0.45 + Math.sin(t * 1.5 + side) * 0.22; elbow = -0.75 + Math.sin(t * 2 + side) * 0.3; }
@@ -53,7 +54,7 @@ export default function Character({ position = [0, 0, 0], rotation = 0, shirt = 
     }
     const squat = landing.current * 0.4;
     body.current.position.y = (seated ? -0.49 : 0) - squat + (walking && !swimming && !air ? Math.abs(gait) * 0.025 : Math.sin(t * 2) * 0.004);
-    body.current.rotation.z = swimming ? Math.sin(phase) * 0.055 : walking ? gait * 0.018 : 0;
+    body.current.rotation.z = waterLeaping ? 0 : swimming ? Math.sin(phase) * 0.055 : walking ? gait * 0.018 : 0;
     let look = Math.sin(t * 0.65) * 0.1;
     if (!motion && !resting) {
       const explorer = scene.getObjectByName('student-explorer');
@@ -66,7 +67,7 @@ export default function Character({ position = [0, 0, 0], rotation = 0, shirt = 
       }
     }
     head.current.rotation.y += (look - head.current.rotation.y) * blend;
-    head.current.rotation.x = swimming ? -0.32 : behavior === 'build' ? 0.25 : Math.sin(t * 1.2) * 0.025;
+    head.current.rotation.x = swimPose ? -0.32 : behavior === 'build' ? 0.25 : Math.sin(t * 1.2) * 0.025;
     eyes.current.scale.y = t % (4.2 + variant * 0.17) < 0.13 ? 0.12 : 1;
   });
   return <group ref={root} position={position} rotation={[0, rotation, 0]} userData={{ nonSolid: true }}>

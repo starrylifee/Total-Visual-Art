@@ -13,9 +13,10 @@ function Explorer({ controls, onPosition, onReady, paused, config }) {
   const groundMarker = useRef();
   const swimmerBody = useRef();
   const swimRef = useRef(false);
+  const leapRef = useRef(false);
   const swimTime = useRef(0);
-  const boost = useRef(0);
   const [swimming, setSwimming] = useState(false);
+  const [waterLeaping, setWaterLeaping] = useState(false);
   const reset = useRef(controls.current.reset);
   const elapsed = useRef(0);
   const movingRef = useRef(false);
@@ -49,20 +50,22 @@ function Explorer({ controls, onPosition, onReady, paused, config }) {
       player.current = spawnCharacter(config.spawn); reset.current = c.reset;
       ref.current.rotation.y = Math.PI + (config.spawn.yaw || 0); c.yaw = config.spawn.yaw || 0; c.pitch = DEFAULT_PITCH;
       c.jumpQueued = false;
-      boost.current = 0;
+      leapRef.current = false; setWaterLeaping(false);
     }
     c.yaw += (Number(keys.has('turnLeft')) - Number(keys.has('turnRight'))) * dt * 1.4;
     c.pitch = clampPitch(c.pitch + (Number(keys.has('lookDown')) - Number(keys.has('lookUp'))) * dt * 0.8);
     const wasSwimming = config.isSwimming(player.current);
-    if (wasSwimming && c.jumpQueued && !paused) boost.current = 0.7;
-    if (!paused) boost.current = Math.max(0, boost.current - dt);
-    const speed = wasSwimming ? (boost.current > 0 ? 4.4 : 2.6) : 3.5;
+    const jumpRequested = c.jumpQueued && !paused;
+    if (wasSwimming && jumpRequested && player.current.jumpsUsed === 0) player.current.waterLeaping = true;
+    const speed = wasSwimming ? 2.6 : 3.5;
     const v = movementVector(keys, c.yaw, dt * speed);
     const flow = !paused && !c.jumpQueued ? config.flowAt?.(player.current) : null;
     if (flow) { v.x += flow.x * dt; v.z += flow.z * dt; }
-    const next = paused ? player.current : stepCharacter(player.current, v.x, v.z, dt, c.jumpQueued && !wasSwimming, surfaces.current, config.bounds, config.floorAt);
+    const next = paused ? player.current : stepCharacter(player.current, v.x, v.z, dt, jumpRequested, surfaces.current, config.bounds, config.floorAt);
     const inWater = config.isSwimming(next);
+    if (next.waterLeaping && ((inWater && next.velocity <= 0) || (next.velocity === 0 && next.jumpsUsed === 0))) next.waterLeaping = false;
     if (inWater !== swimRef.current) { swimRef.current = inWater; setSwimming(inWater); }
+    if (!!next.waterLeaping !== leapRef.current) { leapRef.current = !!next.waterLeaping; setWaterLeaping(!!next.waterLeaping); }
     c.jumpQueued = false;
     const isMoving = Math.hypot(next.x - player.current.x, next.z - player.current.z) > 0.0001;
     if (isMoving) ref.current.rotation.y = Math.atan2(v.x, v.z);
@@ -70,7 +73,8 @@ function Explorer({ controls, onPosition, onReady, paused, config }) {
     player.current = next;
     if (!paused) swimTime.current += dt;
     ref.current.position.set(next.x, next.height + (inWater ? Math.sin(swimTime.current * 3) * 0.055 : 0), next.z);
-    swimmerBody.current.rotation.x += ((inWater ? 1.05 : 0) - swimmerBody.current.rotation.x) * (1 - Math.exp(-10 * dt));
+    const leapTilt = next.waterLeaping ? Math.max(0.42, Math.min(1.48, 1.02 - next.velocity * 0.065)) : 0;
+    swimmerBody.current.rotation.x += (((inWater ? 1.05 : leapTilt)) - swimmerBody.current.rotation.x) * (1 - Math.exp(-10 * dt));
     const support = Math.max(config.floorAt(next.x, next.z), ...surfaces.current(next.x, next.z).filter(s => s.top <= next.height + 0.01).map(s => s.top));
     groundMarker.current.position.y = (inWater ? 0.02 : support + 0.02) - next.height;
     groundMarker.current.scale.setScalar(inWater ? 1 + Math.sin(swimTime.current * 5) * 0.16 : 1);
@@ -85,7 +89,7 @@ function Explorer({ controls, onPosition, onReady, paused, config }) {
     if (elapsed.current > 0.2) { onPosition({ ...next, swimming: inWater }); elapsed.current = 0; }
   });
   return <group ref={ref} name="student-explorer" position={[config.spawn.x, config.spawn.height, config.spawn.z]} rotation={[0, Math.PI + (config.spawn.yaw || 0), 0]}>
-    <group ref={swimmerBody} position={[0, 1, 0]}><Person position={[0, -1, 0]} walking={walking} swimming={swimming} motion={player} paused={paused} shirt="#ed795f" /></group>
+    <group ref={swimmerBody} position={[0, 1, 0]}><Person position={[0, -1, 0]} walking={walking} swimming={swimming} waterLeaping={waterLeaping} motion={player} paused={paused} shirt="#ed795f" /></group>
     <mesh ref={groundMarker} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}><ringGeometry args={[0.48, 0.55, 32]} /><meshBasicMaterial color="#fffcdf" /></mesh>
   </group>;
 }

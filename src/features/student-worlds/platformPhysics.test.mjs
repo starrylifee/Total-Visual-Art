@@ -33,6 +33,24 @@ test('two jumps allowed, third rejected, landing replenishes both', () => {
   assert.equal(p.height, 0); assert.equal(p.jumpsUsed, 0);
   assert.ok(tick(p, true).velocity > 0);
 });
+
+test('a swimmer gets two upward jumps to escape a float ring and a third is rejected', () => {
+  const water = () => -0.85;
+  let p = spawnCharacter({ x: 0, z: 0, height: -0.85 });
+  p = stepCharacter(p, 0, 0, 1 / 60, true, empty, EXPLORE_BOUNDS, water);
+  assert.equal(p.jumpsUsed, 1);
+  assert.ok(p.velocity > 8);
+  for (let i = 0; i < 10; i++) p = stepCharacter(p, 0, 0, 1 / 60, false, empty, EXPLORE_BOUNDS, water);
+  p = stepCharacter(p, 0, 0, 1 / 60, true, empty, EXPLORE_BOUNDS, water);
+  assert.equal(p.jumpsUsed, 2);
+  const secondVelocity = p.velocity;
+  p = stepCharacter(p, 0, 0, 1 / 60, true, empty, EXPLORE_BOUNDS, water);
+  assert.equal(p.jumpsUsed, 2);
+  assert.ok(p.velocity < secondVelocity, 'third press must not add upward velocity');
+  for (let i = 0; i < 180; i++) p = stepCharacter(p, 0, 0, 1 / 60, false, empty, EXPLORE_BOUNDS, water);
+  assert.equal(p.height, -0.85);
+  assert.equal(p.jumpsUsed, 0);
+});
 test('lands on raised surface and falls when walking off its edge', () => {
   const box = x => Math.abs(x) < 1 ? [{ bottom: 0, top: 1.2 }] : [];
   let p = { ...spawnCharacter(), height: 3, velocity: -1, jumpsUsed: 2 };
