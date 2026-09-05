@@ -21,8 +21,8 @@ export default function WaterparkPool(){
   })),[]);
   useEffect(()=>()=>Object.values(mats).forEach(m=>{m.map.dispose();m.dispose();}),[mats]);
   return <group>
-    <Solid position={[0,-0.3,-37]} size={[180,.6,80]} material={mats.deck}/>
-    <mesh position={[0,-.07,40]} rotation={[-Math.PI/2,0,0]} material={mats.water} receiveShadow userData={{nonSolid:true}}><planeGeometry args={[180,90]}/></mesh>
+    <Solid position={[0,-0.3,-42]} size={[180,.6,80]} material={mats.deck}/>
+    <mesh position={[0,-.07,43]} rotation={[-Math.PI/2,0,0]} material={mats.water} receiveShadow userData={{nonSolid:true}}><planeGeometry args={[180,90]}/></mesh>
     {/* Left yellow flume follows the large curve wrapping the original scene. */}
     <group position={[-11,0,-1]}>
       {Array.from({length:24},(_,i)=>{const a=-1.15+i*.105,r=8.2,x=Math.cos(a)*r,z=Math.sin(a)*r+3,y=5.8-i*.23;return <Solid key={i} position={[x,y,z]} size={[2.8,.22,1.2]} rotation={[0,-a,0]} material={mats.yellow}/>;})}

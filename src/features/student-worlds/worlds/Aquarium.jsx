@@ -60,10 +60,10 @@ export default function Aquarium(){
   const materials=useMemo(()=>Object.fromEntries(Object.entries({water:'#8fcbdc',deck:'#9d8f7f',white:'#f7f1df',cream:'#fff8e9',orange:'#e79549',wood:'#a86f4c',grey:'#777f83',purple:'#9b75b3',blue:'#3e8fc2',yellow:'#f0c856',pink:'#de7892',green:'#63a57a'}).map(([k,c],i)=>{const map=pencilTexture(c,230+i);if(['water','deck'].includes(k))map.repeat.set(9,9);return[k,new MeshStandardMaterial({map,roughness:1,side:DoubleSide})]})),[]);
   useEffect(()=>()=>Object.values(materials).forEach(m=>{m.map.dispose();m.dispose();}),[materials]);
   return <group>
-    <Solid position={[0,-.28,22]} scale={[80,.45,48]} material={materials.water}/>
-    <mesh position={[0,.01,7]} rotation={[-Math.PI/2,0,0]} material={materials.water} receiveShadow userData={{nonSolid:true}}><planeGeometry args={[80,42]}/></mesh>
+    <Solid position={[0,-1.55,22]} scale={[80,.45,48]} material={materials.water} walkable={false}/>
+    <mesh position={[0,-.07,12]} rotation={[-Math.PI/2,0,0]} receiveShadow userData={{nonSolid:true}}><planeGeometry args={[80,32]}/><meshStandardMaterial map={materials.water.map} transparent opacity={.48} depthWrite={false} side={DoubleSide}/></mesh>
     {/* Rear indoor feed-zone and dock, matching the pale shop strip at the top of the drawing. */}
-    <Solid position={[0,-.05,-10]} scale={[34,.2,8]} material={materials.deck}/>
+    <Solid position={[0,-.05,-9]} scale={[34,.2,10]} material={materials.deck}/>
     <Solid position={[-9,2.2,-13]} scale={[11,4.4,.7]} material={materials.white}/>
     <Solid position={[-9,4.7,-12.55]} scale={[6.4,1.15,.22]} material={materials.orange}/>
     <mesh position={[-9,4.7,-12.4]}><boxGeometry args={[5.8,.8,.1]}/><meshStandardMaterial color="#f6ead0"/></mesh>
