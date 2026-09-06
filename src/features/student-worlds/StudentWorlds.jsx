@@ -2,9 +2,12 @@ import React, { Component, lazy, Suspense, useCallback, useContext, useEffect, u
 import { Link, useSearchParams } from 'react-router-dom';
 import { DrawingProjectContext, drawingProjects, getDrawingProject } from './projectRegistry';
 import { DEFAULT_PITCH } from './movement';
+import { readStoredAvatar, readStoredView, storeAvatar, storeView } from './avatarStore';
 import './student-worlds.css';
 
 const ExploreScene = lazy(() => import('./ExploreScene'));
+const AvatarPreview = lazy(() => import('./AvatarPreview'));
+const AvatarPicker = lazy(() => import('./AvatarPicker'));
 const keys = { KeyW: 'forward', ArrowUp: 'forward', KeyS: 'back', ArrowDown: 'back', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', KeyQ: 'turnLeft', KeyE: 'turnRight', KeyI: 'lookUp', KeyK: 'lookDown' };
 
 class SceneBoundary extends Component {
@@ -50,10 +53,12 @@ function ThemeNavigation({ world, choose, leave }) {
   </nav>;
 }
 
-function Exploration({ world, leave, choose }) {
+function Exploration({ world, leave, choose, avatar, pickerOpen, openPicker }) {
   const project = useContext(DrawingProjectContext);
   const config = project.configs[world.scene];
-  const controls = useRef({ keys: new Set(), touch: new Map(), yaw: 0, pitch: DEFAULT_PITCH, jumpQueued: false, reset: 0 });
+  const controls = useRef({ keys: new Set(), touch: new Map(), yaw: 0, pitch: DEFAULT_PITCH, jumpQueued: false, reset: 0, view: readStoredView() });
+  const [view, setView] = useState(controls.current.view);
+  const toggleView = useCallback(() => setView(current => { const next = current === 'first' ? 'third' : 'first'; controls.current.view = next; storeView(next); return next; }), []);
   const [position, setPosition] = useState(config.spawn);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -73,24 +78,25 @@ function Exploration({ world, leave, choose }) {
     if (compare) closeRef.current?.focus();
     const down = e => {
       if (e.code === 'Escape' && compare) { setCompare(false); compareTrigger.current?.focus(); return; }
-      if (compare || e.target.closest?.('input, textarea, select, .sw-theme-nav')) return;
+      if (compare || pickerOpen || e.target.closest?.('input, textarea, select, .sw-theme-nav')) return;
       if (e.code === 'Space' && !e.target.closest?.('button, a, input, textarea, select')) {
         e.preventDefault();
         if (!e.repeat) controls.current.jumpQueued = true;
       }
       if (keys[e.code]) { e.preventDefault(); controls.current.keys.add(keys[e.code]); }
       if (e.code === 'KeyR') { clear(); controls.current.reset++; }
+      if (e.code === 'KeyV' && !e.repeat) toggleView();
     };
     const up = e => { if (keys[e.code]) controls.current.keys.delete(keys[e.code]); };
     window.addEventListener('keydown', down); window.addEventListener('keyup', up);
     window.addEventListener('blur', clear); document.addEventListener('visibilitychange', clear);
     return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', clear); document.removeEventListener('visibilitychange', clear); };
-  }, [compare, clear]);
+  }, [compare, pickerOpen, clear, toggleView]);
   return <section className="sw-exploration" aria-label={`${world.title} 탐험`}>
     <div className="sw-canvas" aria-label={`3D ${world.title}`} role="img">
       {failed ? <div className="sw-render-failure" role="alert">3D 연결이 끊겼어요. 목록에서 다시 입장해 주세요.</div> :
         <SceneBoundary><Suspense fallback={<div className="sw-render-failure" role="status">그림 속으로 들어가는 중…</div>}>
-          <ExploreScene config={config} Scene={project.scenes[world.scene]} controls={controls} onPosition={setPosition} onReady={onReady} onFailure={onFailure} paused={compare} />
+          <ExploreScene config={config} Scene={project.scenes[world.scene]} controls={controls} onPosition={setPosition} onReady={onReady} onFailure={onFailure} paused={compare || pickerOpen} avatar={avatar} />
         </Suspense></SceneBoundary>}
     </div>
     <ThemeNavigation world={world} choose={choose} leave={leave} />
@@ -101,6 +107,12 @@ function Exploration({ world, leave, choose }) {
     <div className="sw-toolbar">
       <button ref={compareTrigger} onClick={() => setCompare(true)}>원본 그림 보기</button>
       <button onClick={() => { clear(); controls.current.reset++; }}>처음 위치로</button>
+      <button onClick={toggleView} aria-pressed={view === 'first'}>{view === 'first' ? '시점 · 1인칭' : '시점 · 3인칭'}</button>
+      <button onClick={() => { clear(); openPicker(); }}>아바타 바꾸기</button>
+      <details className="sw-mobile-guide">
+        <summary>탐험 안내</summary>
+        <div><h3>{config.heading}</h3><p>{config.guide}</p><small>그림에 없는 뒷면과 길은 상상으로 채웠어요.</small></div>
+      </details>
     </div>
     <div className="sw-map-panel"><MiniMap position={position} config={config} /><output className="sw-coordinate sw-sr-only" aria-label="현재 위치" data-height={position.height?.toFixed(2)} data-swimming={position.swimming ? 'true' : 'false'}>{position.x.toFixed(1)} / {position.z.toFixed(1)}</output></div>
     <div className="sw-bottom">
@@ -110,9 +122,9 @@ function Exploration({ world, leave, choose }) {
         <ControlButton action="back" label="뒤로 이동" controls={controls}>↓</ControlButton>
         <ControlButton action="right" label="오른쪽으로 이동" controls={controls}>→</ControlButton>
       </div>
-      <p className="sw-key-help"><b>W A S D</b> / 방향키 · 이동　<b>Space</b> · 2단 점프<br /><b>Q E</b> · 좌우　<b>I K</b> · 위아래 <span>점프를 두 번 눌러 물체 위로!　R · 처음 위치</span></p>
+      <p className="sw-key-help"><b>W A S D</b> / 방향키 · 이동　<b>Space</b> · 2단 점프<br /><b>Q E</b> · 좌우　<b>I K</b> · 위아래　<b>V</b> · 시점 <span>점프를 두 번 눌러 물체 위로!　R · 처음 위치</span></p>
       <div className="sw-turn">
-        <button className="sw-control sw-jump" aria-label={position.swimming ? '수면 도약' : '점프'} onClick={() => { controls.current.jumpQueued = true; }}>{position.swimming ? '수면 2단 도약 ↑' : '2단 점프 ↑'}</button>
+        <button className="sw-control sw-jump" aria-label={position.swimming ? '수면 도약' : '점프'} onClick={() => { controls.current.jumpQueued = true; }}>{position.swimming ? '수면 도약 ↑' : '2단 점프 ↑'}</button>
         <ControlButton action="lookUp" label="위 보기" controls={controls}>⌃</ControlButton><ControlButton action="lookDown" label="아래 보기" controls={controls}>⌄</ControlButton>
         <ControlButton action="turnLeft" label="시점 왼쪽 회전" controls={controls}>↶</ControlButton><ControlButton action="turnRight" label="시점 오른쪽 회전" controls={controls}>↷</ControlButton><small>둘러보기</small>
       </div>
@@ -145,8 +157,13 @@ function ProjectWorlds() {
     return next;
   });
   const first = worldCatalog[0];
+  const [avatar, setAvatar] = useState(readStoredAvatar);
+  const [picking, setPicking] = useState(false);
+  const chooseAvatar = id => { storeAvatar(id); setAvatar(id); setPicking(false); };
+  const picker = (picking || !avatar) && <Suspense fallback={<div className="sw-avatar-modal" />}><AvatarPicker current={avatar} onChoose={chooseAvatar} onClose={() => setPicking(false)} /></Suspense>;
+  if (params.get('avatarPreview')) return <div style={{ height: '100vh', background: '#eef2ee' }}><Suspense fallback={null}><AvatarPreview avatar={params.get('avatarPreview')} spin={params.get('spin') !== '0'} behavior={params.get('behavior') || 'idle'} className="sw-avatar-preview-page" /></Suspense></div>;
   const available = worldCatalog.filter(world => world.scene).length;
-  if (selected?.scene) return <Exploration key={selected.id} world={selected} choose={setSelected} leave={() => setSelected(null)} />;
+  if (selected?.scene) return <><Exploration key={selected.id} world={selected} choose={setSelected} leave={() => setSelected(null)} avatar={avatar} pickerOpen={!!picker} openPicker={() => setPicking(true)} />{picker}</>;
   if (selected) return <div className="sw-library sw-pending">
     <ThemeNavigation world={selected} choose={setSelected} leave={() => setSelected(null)} />
     <section className="sw-pending-copy"><span className="sw-eyebrow">{String(selected.order).padStart(2, '0')} / {worldCatalog.length} · {selected.category}</span><h1>{selected.title}</h1>
@@ -155,7 +172,8 @@ function ProjectWorlds() {
     </section>
   </div>;
   return <div className="sw-library">
-    <div className="sw-library-top"><Link to="/">← 스튜디오</Link><span>학생 그림 탐험실</span></div>
+    {picker}
+    <div className="sw-library-top"><Link to="/">← 스튜디오</Link><span>학생 그림 탐험실</span><button type="button" className="sw-avatar-change" onClick={() => setPicking(true)}>아바타 바꾸기</button></div>
     {drawingProjects.length > 1 && <label>프로젝트 선택 <select aria-label="프로젝트 선택" value={project.id} onChange={e => setParams({ project: e.target.value })}>{drawingProjects.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}
     <header className="sw-library-heading"><span className="sw-eyebrow">OUR LITTLE WORLDS</span><h1>내가 그린 곳으로,<br />한 걸음.</h1><p>{project.description || '종이 위의 그림이 걸어 들어갈 수 있는 세계가 됩니다.'}<br />친구의 그림 속에서 나만의 산책을 시작해 보세요.</p></header>
     <section className="sw-feature"><img src={first.sourceImage} alt={`${first.title} 원본 그림`} />

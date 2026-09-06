@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import { pencilTexture } from './materials';
+import { avatarSkins } from './avatarSkins';
 
 function Ball({ position, scale = [1, 1, 1], radius = 0.1, color, map }) {
   return <mesh position={position} scale={scale} castShadow><sphereGeometry args={[radius, 12, 10]} /><meshStandardMaterial color={map ? '#ffffff' : color} map={map} roughness={0.9} /></mesh>;
@@ -12,7 +13,7 @@ function Bone({ length, radius, color }) {
 
 // A reusable articulated character. Each forearm/shin is parented to its joint.
 export default function Character({ position = [0, 0, 0], rotation = 0, shirt = '#ed795f', variant = 0,
-  walking = false, swimming = false, waterLeaping = false, behavior = 'idle', motion, paused = false, goggles = false, pants, patterned = false, barefoot = false }) {
+  walking = false, swimming = false, waterLeaping = false, behavior = 'idle', motion, paused = false, goggles = false, pants, patterned = false, barefoot = false, avatar }) {
   const root = useRef(); const body = useRef(); const head = useRef(); const eyes = useRef();
   const joints = useRef({}); const time = useRef(variant * 1.73);
   const wasAir = useRef(false); const landing = useRef(0);
@@ -23,6 +24,7 @@ export default function Character({ position = [0, 0, 0], rotation = 0, shirt = 
   const fabric = useMemo(() => pencilTexture(shirt, variant + 13), [shirt, variant]);
   useEffect(() => () => fabric.dispose(), [fabric]);
   const jointRef = key => value => { joints.current[key] = value; };
+  const Skin = avatar ? avatarSkins[avatar] : null;
   useFrame(({ scene }, delta) => {
     if (paused || !body.current) return;
     const dt = Math.min(delta, 0.05); time.current += dt;
@@ -70,6 +72,9 @@ export default function Character({ position = [0, 0, 0], rotation = 0, shirt = 
     head.current.rotation.x = swimPose ? -0.32 : behavior === 'build' ? 0.25 : Math.sin(t * 1.2) * 0.025;
     eyes.current.scale.y = t % (4.2 + variant * 0.17) < 0.13 ? 0.12 : 1;
   });
+  if (Skin) return <group ref={root} position={position} rotation={[0, rotation, 0]} userData={{ nonSolid: true }}>
+    <Skin bodyRef={body} headRef={head} eyesRef={eyes} jointRef={jointRef} behavior={behavior} />
+  </group>;
   return <group ref={root} position={position} rotation={[0, rotation, 0]} userData={{ nonSolid: true }}>
     <group ref={body}>
       <Ball position={[0, 1.055, 0]} scale={[1, 1.2, 0.68]} radius={0.255} color={shirt} map={fabric} />

@@ -6,7 +6,7 @@ import { DEFAULT_PITCH, clampPitch, movementVector } from './movement';
 import { spawnCharacter, stepCharacter } from './platformPhysics';
 import { createSurfaceSampler } from './platformSurfaces';
 
-function Explorer({ controls, onPosition, onReady, paused, config }) {
+function Explorer({ controls, onPosition, onReady, paused, config, avatar }) {
   const ref = useRef();
   const player = useRef(spawnCharacter(config.spawn));
   const surfaces = useRef(() => []);
@@ -78,18 +78,31 @@ function Explorer({ controls, onPosition, onReady, paused, config }) {
     const support = Math.max(config.floorAt(next.x, next.z), ...surfaces.current(next.x, next.z).filter(s => s.top <= next.height + 0.01).map(s => s.top));
     groundMarker.current.position.y = (inWater ? 0.02 : support + 0.02) - next.height;
     groundMarker.current.scale.setScalar(inWater ? 1 + Math.sin(swimTime.current * 5) * 0.16 : 1);
-    const distance = Math.cos(c.pitch) * Math.hypot(13.2, 4.1) - 2.5;
-    const cameraHeight = Math.max(0.65, 1.4 + Math.sin(c.pitch) * Math.hypot(13.2, 4.1));
     const viewHeight = Math.max(next.height, -0.2);
-    cameraPosition.set(next.x + Math.sin(c.yaw) * distance, cameraHeight + viewHeight, next.z + Math.cos(c.yaw) * distance);
-    camera.position.lerp(cameraPosition, 1 - Math.exp(-7 * dt));
-    cameraTarget.set(next.x - Math.sin(c.yaw) * 2.5, (config.focusHeight || 1.4) + viewHeight, next.z - Math.cos(c.yaw) * 2.5);
-    camera.lookAt(cameraTarget);
+    const firstPerson = c.view === 'first';
+    swimmerBody.current.visible = !firstPerson;
+    groundMarker.current.visible = !firstPerson;
+    if (firstPerson) {
+      // Eyes sit in the avatar's head; the pitch control tilts the gaze instead of orbiting the camera.
+      const eye = viewHeight + (inWater ? 0.75 : 1.5) + (inWater ? Math.sin(swimTime.current * 3) * 0.055 : 0);
+      const gaze = Math.max(-0.9, Math.min(0.9, (DEFAULT_PITCH - c.pitch) * 1.15));
+      cameraPosition.set(next.x, eye, next.z);
+      camera.position.copy(cameraPosition);
+      cameraTarget.set(next.x - Math.sin(c.yaw) * Math.cos(gaze), eye + Math.sin(gaze), next.z - Math.cos(c.yaw) * Math.cos(gaze));
+      camera.lookAt(cameraTarget);
+    } else {
+      const distance = Math.cos(c.pitch) * Math.hypot(13.2, 4.1) - 2.5;
+      const cameraHeight = Math.max(0.65, 1.4 + Math.sin(c.pitch) * Math.hypot(13.2, 4.1));
+      cameraPosition.set(next.x + Math.sin(c.yaw) * distance, cameraHeight + viewHeight, next.z + Math.cos(c.yaw) * distance);
+      camera.position.lerp(cameraPosition, 1 - Math.exp(-7 * dt));
+      cameraTarget.set(next.x - Math.sin(c.yaw) * 2.5, (config.focusHeight || 1.4) + viewHeight, next.z - Math.cos(c.yaw) * 2.5);
+      camera.lookAt(cameraTarget);
+    }
     elapsed.current += dt;
     if (elapsed.current > 0.2) { onPosition({ ...next, swimming: inWater }); elapsed.current = 0; }
   });
   return <group ref={ref} name="student-explorer" position={[config.spawn.x, config.spawn.height, config.spawn.z]} rotation={[0, Math.PI + (config.spawn.yaw || 0), 0]}>
-    <group ref={swimmerBody} position={[0, 1, 0]}><Person position={[0, -1, 0]} walking={walking} swimming={swimming} waterLeaping={waterLeaping} motion={player} paused={paused} shirt="#ed795f" /></group>
+    <group ref={swimmerBody} position={[0, 1, 0]}><Person position={[0, -1, 0]} walking={walking} swimming={swimming} waterLeaping={waterLeaping} motion={player} paused={paused} shirt="#ed795f" avatar={avatar} /></group>
     <mesh ref={groundMarker} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}><ringGeometry args={[0.48, 0.55, 32]} /><meshBasicMaterial color="#fffcdf" /></mesh>
   </group>;
 }
@@ -104,7 +117,7 @@ function ContextGuard({ onFailure }) {
   return null;
 }
 
-export default function ExploreScene({ controls, onPosition, onReady, paused, onFailure, config, Scene }) {
+export default function ExploreScene({ controls, onPosition, onReady, paused, onFailure, config, Scene, avatar }) {
   return <Canvas shadows dpr={[1, 1.5]} camera={{ position: [0, 5.5, 21.7], fov: 58, near: 0.1, far: 180 }}
     gl={{ antialias: true, alpha: false }} fallback={<div className="sw-render-failure">이 기기에서 3D 화면을 열 수 없어요. 다른 브라우저에서 다시 열어 주세요.</div>}>
     <ContextGuard onFailure={onFailure} />
@@ -114,6 +127,6 @@ export default function ExploreScene({ controls, onPosition, onReady, paused, on
     <directionalLight position={[-12, 22, 14]} intensity={1.3} castShadow shadow-mapSize={[1024, 1024]}
       shadow-camera-left={-22} shadow-camera-right={22} shadow-camera-top={22} shadow-camera-bottom={-22} shadow-camera-far={65} shadow-bias={-0.001} />
     <Scene />
-    <Explorer controls={controls} onPosition={onPosition} onReady={onReady} paused={paused} config={config} />
+    <Explorer controls={controls} onPosition={onPosition} onReady={onReady} paused={paused} config={config} avatar={avatar} />
   </Canvas>;
 }
