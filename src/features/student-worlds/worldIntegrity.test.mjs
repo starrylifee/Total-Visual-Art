@@ -65,7 +65,7 @@ test('waterpark-pool stairs rise from water to all three story platforms', () =>
   const config = worldConfigs.waterparkPool;
   const routes = [
     { count:46, x:-12.5, startZ:2, dz:-(9.2/45), platform:[-12.5,6,-9,4,.25,3], min:6 },
-    { count:30, x:-6.3, startZ:-1, dz:-(5/29), platform:[-2,1.8,-8,5,3.6,4], min:3.5 },
+    { count:36, x:0, startZ:2, dz:-(7.8/35), platform:[-2,1.8,-8,5,3.6,4], min:4.5 },
     { count:39, x:13.2, startZ:10, dz:-(14.95/38), platform:[11.5,4.9,-6.5,5,.22,2.5], min:4.9 },
   ];
   for (const route of routes) {

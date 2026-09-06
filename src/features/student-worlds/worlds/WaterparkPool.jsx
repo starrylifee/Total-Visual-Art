@@ -35,7 +35,8 @@ export default function WaterparkPool(){
       {[-1.7,0,1.7].map(x=><Solid key={x} position={[x,4,0]} size={[1.2,1.2,4]} material={mats.brick}/>) }
       <mesh position={[0,1.2,2.03]}><torusGeometry args={[1,0.3,8,20,Math.PI]}/><meshStandardMaterial color="#403e3c"/></mesh>
       <Solid position={[4.2,.8,1]} size={[4.5,.2,2.6]} rotation={[0,0,-.12]} material={mats.green}/>
-      {Array.from({length:30},(_,i)=><Solid key={i} position={[-4.3,-.775+i*.15,7-i*(5/29)]} size={[1.6,.15,.22]} material={mats.brick}/>)}
+      {/* Approach from the front: the old left stair ended under the yellow flume. */}
+      {Array.from({length:36},(_,i)=><Solid key={i} position={[2,-.775+i*.15,10-i*(7.8/35)]} size={[1.6,.15,.28]} material={mats.brick}/>)}
     </group>
     {/* Right yellow/green chute and its nearby steps. */}
     <group position={[10,0,-6]}>

@@ -1,8 +1,5 @@
 import { slideFlowAt } from './slideLayout.js';
-const moonFloor = (x, z) => {
-  const radial = Math.min(1, (x * x + z * z) / (18 * 18));
-  return -4 + 5.2 * Math.sqrt(1 - radial);
-};
+import { moonFloor } from './moonTerrain.js';
 // Per-world terrain and presentation. Keep scene coordinates out of shared controls.
 export const worldConfigs = {
   constellationNight:{background:'#49417f',fog:'#49417f',spawn:{x:0,z:17,height:0},bounds:{minX:-18,maxX:18,minZ:-18,maxZ:19},floorAt:()=>0,isSwimming:()=>false,heading:'별과 놀이기구가 떠 있는 보랏빛 밤을 탐험해요.',guide:'회색 길을 따라 달 모양 놀이기구와 로켓 미끄럼틀, 나무와 친구들을 찾아보세요.',alt:'보라색 밤하늘과 별, 노란 초승달 놀이기구, 회색 길, 검은 구름, 주황 로켓 미끄럼틀, 나무와 두 아이.',readyText:'탐험 중 · 달과 로켓, 별빛 친구들을 찾아보세요.',map:[{x:-9,z:-13,label:'초승달'},{x:9,z:-5,label:'로켓'},{x:-13,z:4,label:'나무'},{x:8,z:1,label:'친구들'}]},
@@ -51,9 +48,9 @@ export const worldConfigs = {
   waterparkPool: {
     spawn:{x:0,z:16,height:-.85},bounds:{minX:-17,maxX:17,minZ:-18,maxZ:18},
     floorAt:(x,z)=>z<-2?0:-.85*Math.min(1,(z+2)/2),isSwimming:p=>p.z>-1.7&&p.height<-.35,
-    heading:'노란 미끄럼틀과 물놀이 성',guide:'튜브 사이를 헤엄치고 양쪽 계단으로 미끄럼틀과 중앙 놀이 성에 올라가 보세요.',
+    heading:'노란 미끄럼틀과 물놀이 성',guide:'양쪽 계단은 미끄럼틀로, 성 앞 가운데 계단은 성 위로 이어져요. 튜브 옆으로 헤엄쳐 계단 입구를 찾아보세요.',
     alt:'왼쪽을 크게 감싸는 노란 미끄럼틀, 중앙 붉은 놀이 성과 초록 터널, 오른쪽 노랑·초록 미끄럼틀. 수영모를 쓴 여러 사람과 튜브.',
-    waterLabel:'수영장',readyText:'탐험 중 · 성과 양쪽 미끄럼틀을 찾아보세요',map:[{x:-9,z:-8,label:'노랑'},{x:-2,z:-8,label:'놀이성'},{x:10,z:-6,label:'초록'}],waterRect:{x:-17,z:-2,width:34,depth:20},
+    waterLabel:'수영장',readyText:'탐험 중 · 성과 양쪽 미끄럼틀을 찾아보세요',map:[{x:-12.5,z:-9,label:'노랑'},{x:-2,z:-8,label:'놀이성'},{x:10,z:-6,label:'초록'}],waterRect:{x:-17,z:-2,width:34,depth:20},
   },
   happyWaterpark: {
     spawn: {x:0,z:15,height:-0.85},
@@ -62,10 +59,10 @@ export const worldConfigs = {
     isSwimming:p=>p.z>-2.7&&p.height< -0.35,
     flowAt:slideFlowAt,
     heading:'두 미끄럼틀을 타고 풍덩!',
-    guide:'뒤쪽 마른 바닥에서 양옆 회색 계단을 올라가세요. 미끄럼틀 가운데로 들어가면 물 쪽으로 미끄러져요.',
+    guide:'물속 앞쪽에 있는 양옆 회색 계단 입구로 헤엄쳐 가세요. 계단을 올라 미끄럼틀 가운데로 들어가면 물 쪽으로 미끄러져요.',
     alt:'왼쪽 큰 노란 해, 가운데 파란 굽은 미끄럼틀과 오른쪽 긴 빨간 미끄럼틀. 위쪽 노란 출발 공간과 양옆 회색 계단. 미끄럼틀 쪽 세 사람과 물속 세 사람, 초록·노랑 튜브.',
     waterLabel:'물놀이',readyText:'탐험 중 · 회색 계단으로 미끄럼틀 위까지',
-    map:[{x:-3,z:-9,label:'파랑'},{x:9,z:-10,label:'빨강'},{x:-7,z:4,label:'계단'},{x:13,z:5,label:'계단2'}],
+    map:[{x:-3,z:-9,label:'파랑'},{x:9,z:-10,label:'빨강'},{x:-7,z:6.75,label:'계단'},{x:13,z:7.85,label:'계단2'}],
     waterRect:{x:-16,z:-3,width:32,depth:21},
   },
   waterparkDay: {
@@ -77,7 +74,7 @@ export const worldConfigs = {
     guide: '튜브와 초록 매트에 올라가고, 울타리 가운데 열린 통로로 잔디와 피크닉 자리를 오가 보세요.',
     alt: '앞쪽 물속 세 사람, 수박 모양 튜브와 초록 매트, 물총과 공과 빨강·하양 튜브. 뒤쪽 주황 기둥과 빨간 줄, 안전주의 표지. 잔디 위 고양이와 새, 오른쪽 수박·그릇이 놓인 돗자리와 파란 모자의 사람.',
     waterLabel: '물놀이', readyText: '탐험 중 · 가운데 통로로 물과 잔디를 오가요',
-    map: [{ x: -8, z: 7, label: '튜브' }, { x: 7, z: -8, label: '피크닉' }, { x: 0, z: -1, label: '통로' }],
+    map: [{ x: -8.5, z: 4, label: '수박 튜브' }, { x: 7, z: -8, label: '피크닉' }, { x: 0, z: -1, label: '통로' }],
     waterRect: { x: -16, z: -1, width: 32, depth: 18 },
   },
   divingPool: {

@@ -77,7 +77,11 @@ export default function Aquarium(){
     <Boat position={[-3,0,3.8]} rotation={-.08} materials={materials} people/>
     {/* Added access steps make the main subject reachable from the dock. */}
     {Array.from({length:8},(_,i)=><Solid key={i} position={[-3.2,(i+1)*.15-.075,-4.7+i*.62]} scale={[1.7,.15,.7]} material={materials.deck}/>) }
-    <Solid position={[-3.2,.95,.35]} scale={[1.7,.18,2]} material={materials.deck}/>
+    {/* Continuous gangway: bridge the water gap and step over the boat rail. */}
+    <Solid position={[-3.2,1.11,.65]} scale={[1.7,.18,2.7]} material={materials.deck}/>
+    {[[1.65,1.35,.4],[2.3,1.5,1],[3,1.35,.4],[3.35,1.2,.4]].map(([z,top,depth])=>
+      <Solid key={z} position={[-3.2,top-.075,z]} scale={[1.7,.15,depth]} material={materials.deck}/>
+    )}
     <Fish position={[-11,-.38,3]} material={materials.blue} phase={0}/>
     <Fish position={[7,-.42,4]} material={materials.blue} phase={2} scale={1.2}/>
     <Fish position={[-7,-.48,12]} material={materials.yellow} phase={4} scale={.8}/>

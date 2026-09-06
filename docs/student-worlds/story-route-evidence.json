@@ -1,0 +1,1756 @@
+{
+  "date": "2026-09-06",
+  "method": "Node simulation of continuous routes using production static JSX geometry, physics and slide flow; NOT browser input evidence",
+  "worlds": [
+    {
+      "order": 1,
+      "id": "08",
+      "key": "beach",
+      "result": [
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0,
+          "z": 3.124999999999968,
+          "height": 0
+        },
+        {
+          "label": "낮은 튜브",
+          "reached": true,
+          "x": -0.2963068390335855,
+          "z": 1.816307865053611,
+          "height": 0.8132160357986233
+        },
+        {
+          "label": "세운 튜브",
+          "reached": true,
+          "x": -1.7811370226220866,
+          "z": 2.196259458003139,
+          "height": 2.949717267409575
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -0.000044991400947057975,
+          "z": 5.9999039177707,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -7.8721038284869875,
+          "z": 6.984011352573257,
+          "height": 0
+        },
+        {
+          "label": "가게 발판",
+          "reached": true,
+          "x": -7.99969147003413,
+          "z": 5.004786124147843,
+          "height": 1.2
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -7.999998162848235,
+          "z": 6.988119433768455,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 2.8499955088319586,
+          "z": 6.999837987400911,
+          "height": 0
+        },
+        {
+          "label": "돗자리",
+          "reached": true,
+          "x": 6,
+          "z": 4.5,
+          "height": 0.045
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 12.378841086836353,
+          "z": 0.08387924757483717,
+          "height": 0
+        },
+        {
+          "label": "파라솔",
+          "reached": true,
+          "x": 7.129479323475257,
+          "z": 0.0020191390774088377,
+          "height": 4.74492906866556
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 12.496145610849286,
+          "z": 0.0000014491235063596457,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 12.005977995512865,
+          "z": -13.831315758896716,
+          "height": -0.85
+        },
+        {
+          "label": "돌고래",
+          "reached": true,
+          "x": -7.850171137481125,
+          "z": -14.991247484600475,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 11.841958166794463,
+          "z": -14.007892051335059,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 11.998904243800485,
+          "z": 10.826612029256177,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.15847372260222425,
+          "z": 10.997710004462084,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 2,
+      "id": "19",
+      "key": "seaDay",
+      "result": [
+        {
+          "label": "친구들",
+          "reached": true,
+          "x": -6.90958758452593,
+          "z": -3.857923347112178,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -0.09930359453341761,
+          "z": 3.8870670608932087,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 6.833152658342973,
+          "z": 3.9973458578824568,
+          "height": -0.85
+        },
+        {
+          "label": "계단",
+          "reached": true,
+          "x": 6.992108559418785,
+          "z": 1.1417665783818665,
+          "height": -0.6999999970197677
+        },
+        {
+          "label": "발판",
+          "reached": true,
+          "x": 6.999770728148235,
+          "z": -4.82156183246513,
+          "height": 0.23999999865888838
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 6.999995930967485,
+          "z": 3.843438164608356,
+          "height": -0.85
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.12652173284389695,
+          "z": 6.942946584943593,
+          "height": -0.85
+        }
+      ]
+    },
+    {
+      "order": 3,
+      "id": "06",
+      "key": "divingPool",
+      "result": [
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -12.833333333333373,
+          "z": 14,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -12.998968037777656,
+          "z": -12.832822119979424,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "출발대 -13",
+          "reached": true,
+          "x": -9,
+          "z": -13,
+          "height": 0.8600000002980233
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13,
+          "z": -13,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13,
+          "z": -7.108333333333309,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "출발대 -7",
+          "reached": true,
+          "x": -9,
+          "z": -7,
+          "height": 0.8600000002980233
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13,
+          "z": -7,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13,
+          "z": -1.1083333333333163,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "출발대 -1",
+          "reached": true,
+          "x": -9,
+          "z": -0.9999999999999999,
+          "height": 0.8600000002980233
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13,
+          "z": -1,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13,
+          "z": 4.8916666666666755,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "출발대 5",
+          "reached": true,
+          "x": -9,
+          "z": 5,
+          "height": 0.8600000002980233
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13,
+          "z": 5,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13,
+          "z": 10.89166666666669,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "출발대 11",
+          "reached": true,
+          "x": -9,
+          "z": 11,
+          "height": 0.8600000002980233
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13,
+          "z": 11,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "마지막 출발대",
+          "reached": true,
+          "x": -9,
+          "z": 11,
+          "height": 0.8600000002980233
+        },
+        {
+          "label": "다이빙",
+          "reached": true,
+          "x": -4,
+          "z": 11,
+          "height": -0.425
+        },
+        {
+          "label": "레인",
+          "reached": true,
+          "x": 2.9158511319348475,
+          "z": 0.1322339355309545,
+          "height": -0.85
+        },
+        {
+          "label": "얕은 출구",
+          "reached": true,
+          "x": 3.9999999999999996,
+          "z": 14,
+          "height": 1.1920928966180355e-8
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0,
+          "z": 14,
+          "height": 1.1920928966180355e-8
+        }
+      ]
+    },
+    {
+      "order": 4,
+      "id": "09",
+      "key": "waterparkDay",
+      "result": [
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0,
+          "z": 14,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -9.858104392946098,
+          "z": 15.971620878589224,
+          "height": -0.55
+        },
+        {
+          "label": "초록 매트",
+          "reached": true,
+          "x": -9.995962296151513,
+          "z": 10.169925180235051,
+          "height": 0.255
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -9.071293511260091,
+          "z": 8.155328756789718,
+          "height": 0.255
+        },
+        {
+          "label": "수박 튜브",
+          "reached": true,
+          "x": -8.5,
+          "z": 4,
+          "height": 0.42000000074505806
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -0.16499999999997406,
+          "z": 4,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 7.895736492955092,
+          "z": 12.885073905278123,
+          "height": 0.5933024448791109
+        },
+        {
+          "label": "빨강 튜브",
+          "reached": true,
+          "x": 7.943038309769473,
+          "z": 12.778426592901436,
+          "height": 0.5758381402303422
+        },
+        {
+          "label": "튜브 구멍",
+          "reached": true,
+          "x": 7.999999999999999,
+          "z": 11,
+          "height": -0.85
+        },
+        {
+          "label": "튜브 탈출",
+          "reached": true,
+          "x": 10.994166666666667,
+          "z": 11,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0.11822149142874905,
+          "z": 4.075271775032325,
+          "height": -0.85
+        },
+        {
+          "label": "통로",
+          "reached": true,
+          "x": 0,
+          "z": -3,
+          "height": 0
+        },
+        {
+          "label": "피크닉",
+          "reached": true,
+          "x": 6.88282894395697,
+          "z": -7.916306388540692,
+          "height": 0.05
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0.14240335746118193,
+          "z": -3.1017166839008454,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.00144862298106684,
+          "z": 13.8260298054367,
+          "height": -0.85
+        }
+      ]
+    },
+    {
+      "order": 5,
+      "id": "13",
+      "key": "happyWaterpark",
+      "result": [
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0,
+          "z": 10.146666666666704,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -6.845164310205985,
+          "z": 10.00324417635759,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -6.992419307921383,
+          "z": 7.147037607208951,
+          "height": -0.6999999970197678
+        },
+        {
+          "label": "파랑 계단",
+          "reached": true,
+          "x": -6.9999294032014,
+          "z": -8.849627296542403,
+          "height": 6.000000002980232
+        },
+        {
+          "label": "파랑 출발",
+          "reached": true,
+          "x": -4.143613768032094,
+          "z": -8.957007167708317,
+          "height": 6.000000005960464
+        },
+        {
+          "label": "파랑 곡선",
+          "reached": true,
+          "x": -4.609998211069155,
+          "z": -5.7088519774336515,
+          "height": 4.939265474819329
+        },
+        {
+          "label": "파랑 중간",
+          "reached": true,
+          "x": -2.359953436044021,
+          "z": -0.6630638729511942,
+          "height": 2.7848405536949556
+        },
+        {
+          "label": "파랑 입수",
+          "reached": true,
+          "x": -2.7918020596890782,
+          "z": 7.848993623723873,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -0.1143403606573476,
+          "z": 9.911903910241032,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 14.839293260414077,
+          "z": 10.011810970571437,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 14.97524248510474,
+          "z": 9.155873519926152,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 13.160883050354723,
+          "z": 9.012695862682362,
+          "height": -0.85
+        },
+        {
+          "label": "빨강 계단",
+          "reached": true,
+          "x": 13,
+          "z": -10,
+          "height": 6.9000000029802315
+        },
+        {
+          "label": "빨강 출발",
+          "reached": true,
+          "x": 9,
+          "z": -10,
+          "height": 6.9000000953674245
+        },
+        {
+          "label": "빨강 곡선",
+          "reached": true,
+          "x": 6,
+          "z": -5,
+          "height": 5.5570541158922
+        },
+        {
+          "label": "빨강 중간",
+          "reached": true,
+          "x": 7.836191785376975,
+          "z": 0.3222142798795731,
+          "height": 3.724433702386385
+        },
+        {
+          "label": "빨강 끝",
+          "reached": true,
+          "x": 9.891718215722895,
+          "z": 6.24524537248292,
+          "height": 1.5519595321607937
+        },
+        {
+          "label": "빨강 입수",
+          "reached": true,
+          "x": 5.504250416804986,
+          "z": 11.990755033161388,
+          "height": -0.85
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.14314706146501271,
+          "z": 14.921739648160592,
+          "height": -0.85
+        }
+      ]
+    },
+    {
+      "order": 6,
+      "id": "16",
+      "key": "waterparkPool",
+      "result": [
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -14.86333333333324,
+          "z": 16,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -14.998170326932145,
+          "z": 3.1740420723079135,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -12.64092463134792,
+          "z": 2.302126264965236,
+          "height": -0.7000000000000001
+        },
+        {
+          "label": "노랑 상단",
+          "reached": true,
+          "x": -12.501845307899368,
+          "z": -8.852006688419735,
+          "height": 6.125
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -15,
+          "z": -12,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -15,
+          "z": 2.8366666666667033,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0,
+          "z": 3,
+          "height": -0.85
+        },
+        {
+          "label": "성",
+          "reached": true,
+          "x": 0,
+          "z": -7.848333333333352,
+          "height": 4.6
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0,
+          "z": 2.8449999999999935,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 2.8561903200467187,
+          "z": 2.9925698332024124,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 15.858352672163466,
+          "z": 10.913706062885673,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 13.335785342267176,
+          "z": 10.28390127873454,
+          "height": -0.7000000000000001
+        },
+        {
+          "label": "초록 계단",
+          "reached": true,
+          "x": 13.201426973157865,
+          "z": -5.8288718823249255,
+          "height": 5.010000000000001
+        },
+        {
+          "label": "초록 상단",
+          "reached": true,
+          "x": 10.172417943892768,
+          "z": -5.99078362291592,
+          "height": 5.010000000000001
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 16,
+          "z": -6,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 16,
+          "z": 11.838333333333276,
+          "height": -0.85
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.1474695680359816,
+          "z": 15.961642550897315,
+          "height": -0.85
+        }
+      ]
+    },
+    {
+      "order": 7,
+      "id": "03",
+      "key": "aquarium",
+      "result": [
+        {
+          "label": "먹이존",
+          "reached": true,
+          "x": -8.870412331962097,
+          "z": -9.985601370218014,
+          "height": 0.05
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -3.150945365132625,
+          "z": -7.0767684897557075,
+          "height": 0.05
+        },
+        {
+          "label": "큰 배",
+          "reached": true,
+          "x": -3,
+          "z": 4,
+          "height": 1.1
+        },
+        {
+          "label": "물속",
+          "reached": true,
+          "x": 1.9871487963094718,
+          "z": 7.989719037047577,
+          "height": -0.85
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 12,
+          "z": -6,
+          "height": 0.05
+        },
+        {
+          "label": "작은 배",
+          "reached": true,
+          "x": 8,
+          "z": -7,
+          "height": 0.842
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 12,
+          "z": -6,
+          "height": 0.05
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 12,
+          "z": -10,
+          "height": 0.05
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.16886180352626223,
+          "z": -9.01350986804881,
+          "height": 0.05
+        }
+      ]
+    },
+    {
+      "order": 8,
+      "id": "04",
+      "key": "sunsetValley",
+      "result": [
+        {
+          "label": "노을",
+          "reached": true,
+          "x": 0,
+          "z": -24.858333333332926,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0,
+          "z": -6.133333333333388,
+          "height": 0.03
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -10.84920302629548,
+          "z": -6.001827842105511,
+          "height": 0.51
+        },
+        {
+          "label": "초록 능선",
+          "reached": true,
+          "x": -11,
+          "z": -13,
+          "height": 5.797999999999999
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -0.12379732065368798,
+          "z": -6.0787801131432575,
+          "height": 0.03
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 10.842594331649487,
+          "z": -6.0011147664780795,
+          "height": 0.45000000000000007
+        },
+        {
+          "label": "연두 능선",
+          "reached": true,
+          "x": 10.999985271697344,
+          "z": -12.99934512078854,
+          "height": 5.075999999999999
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0.12349350771790756,
+          "z": -6.078579530730685,
+          "height": 0.03
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.001158488080697202,
+          "z": 12.821024542978613,
+          "height": 0.09
+        }
+      ]
+    },
+    {
+      "order": 9,
+      "id": "12",
+      "key": "dolmenField",
+      "result": [
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -7.992305327278589,
+          "z": 2.0115420090821168,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -8,
+          "z": -3,
+          "height": 0
+        },
+        {
+          "label": "왼쪽 덮개돌",
+          "reached": true,
+          "x": -8,
+          "z": -5.975000000000012,
+          "height": 2.971311784104234
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -8,
+          "z": 1.8416666666666646,
+          "height": 0
+        },
+        {
+          "label": "큰 바위",
+          "reached": true,
+          "x": 1,
+          "z": -8,
+          "height": 3.1315101981163025
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 1,
+          "z": 1.8583333333333514,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 8.873765549110532,
+          "z": 1.9977645982654997,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 8.99686342828335,
+          "z": -4.826125195110657,
+          "height": 0
+        },
+        {
+          "label": "오른쪽 덮개돌",
+          "reached": true,
+          "x": 8.999976404279623,
+          "z": -7.976123656916681,
+          "height": 2.9713707274962933
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 8.999999583428925,
+          "z": 1.8238763430559033,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.08892300058185182,
+          "z": 13.879695833205957,
+          "height": 0.03
+        }
+      ]
+    },
+    {
+      "order": 10,
+      "id": "01",
+      "key": "dabotap",
+      "result": [
+        {
+          "label": "정면 계단",
+          "reached": true,
+          "x": 0,
+          "z": 5.158333333333314,
+          "height": 0
+        },
+        {
+          "label": "기단",
+          "reached": true,
+          "x": 0,
+          "z": -10,
+          "height": 7.5600000000000005
+        },
+        {
+          "label": "처마",
+          "reached": true,
+          "x": 0,
+          "z": -11,
+          "height": 9.058000000000007
+        },
+        {
+          "label": "상층",
+          "reached": true,
+          "x": 0,
+          "z": -11,
+          "height": 9.058000000000007
+        },
+        {
+          "label": "꼭대기 장식",
+          "reached": true,
+          "x": 0,
+          "z": -11,
+          "height": 9.058000000000007
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0,
+          "z": 4.866666666666708,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0,
+          "z": 9.825000000000061,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 11,
+      "id": "02",
+      "key": "soccerField",
+      "result": [
+        {
+          "label": "슈터",
+          "reached": true,
+          "x": -4.9543703720849965,
+          "z": -4.844859265088992,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -13.878058001415843,
+          "z": -4.997908584360067,
+          "height": 0
+        },
+        {
+          "label": "왼쪽 크로스바",
+          "reached": true,
+          "x": -15.989551668127069,
+          "z": -4.004913649890147,
+          "height": 3.09
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -14.007028511162906,
+          "z": -4.996484647455079,
+          "height": 0
+        },
+        {
+          "label": "골키퍼",
+          "reached": true,
+          "x": 6.862970812996487,
+          "z": 6.921746736466448,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 13.847532777231983,
+          "z": 5.041053970790271,
+          "height": 0
+        },
+        {
+          "label": "오른쪽 크로스바",
+          "reached": true,
+          "x": 16,
+          "z": 4,
+          "height": 3.09
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 14.017353059950132,
+          "z": 4.991323470024934,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.13882447960132346,
+          "z": 11.930587760199337,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 12,
+      "id": "07",
+      "key": "weekendRoom",
+      "result": [
+        {
+          "label": "게임판",
+          "reached": true,
+          "x": -10,
+          "z": 8,
+          "height": 0.375
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -8,
+          "z": 5,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -8,
+          "z": -4.85833333333335,
+          "height": 0
+        },
+        {
+          "label": "책상",
+          "reached": true,
+          "x": 0.8655684196731241,
+          "z": -4.997883947346706,
+          "height": 3.32
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -7.826097999415089,
+          "z": -4.999958492702065,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -5.025678739732342,
+          "z": 10.854619772581346,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 10.840335086987151,
+          "z": 10.998551567035536,
+          "height": 0
+        },
+        {
+          "label": "침대",
+          "reached": true,
+          "x": 11,
+          "z": 7,
+          "height": 1.6
+        },
+        {
+          "label": "쿠션",
+          "reached": true,
+          "x": 11.981699914547331,
+          "z": 0.12810059816870445,
+          "height": 1.6912631122965132
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 14,
+          "z": 11,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.13965078045258805,
+          "z": 13.970074832760162,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 13,
+      "id": "14",
+      "key": "movingCity",
+      "result": [
+        {
+          "label": "오토바이",
+          "reached": true,
+          "x": -14,
+          "z": 5,
+          "height": 1.8848301582096119
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -14,
+          "z": 10,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -0.12258044504412875,
+          "z": 2.0700459685966424,
+          "height": 0.05
+        },
+        {
+          "label": "택시 보닛",
+          "reached": true,
+          "x": -0.0002133842941550632,
+          "z": -0.9905524574825704,
+          "height": 4.5
+        },
+        {
+          "label": "택시 지붕",
+          "reached": true,
+          "x": 0,
+          "z": -3,
+          "height": 5.225
+        },
+        {
+          "label": "트렁크",
+          "reached": true,
+          "x": 0,
+          "z": -5.975000000000012,
+          "height": 3.35
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -11.835311976098902,
+          "z": -9.944760891983169,
+          "height": 0.05
+        },
+        {
+          "label": "빌딩 보기",
+          "reached": true,
+          "x": 2.850891528959085,
+          "z": -13.959241133312467,
+          "height": 0.05
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 15.865388145357336,
+          "z": -10.040532085738477,
+          "height": 0.05
+        },
+        {
+          "label": "작은 차",
+          "reached": true,
+          "x": 14,
+          "z": 4,
+          "height": 2.1
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 14,
+          "z": 11.875000000000032,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.16546101858442894,
+          "z": 14.963066736923121,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 14,
+      "id": "11",
+      "key": "roadHome",
+      "result": [
+        {
+          "label": "차단기 통과",
+          "reached": true,
+          "x": 0,
+          "z": 10.000000000000032,
+          "height": 0
+        },
+        {
+          "label": "보닛",
+          "reached": true,
+          "x": 2,
+          "z": -3,
+          "height": 2.3
+        },
+        {
+          "label": "자동차 지붕",
+          "reached": true,
+          "x": 0.01874456898009695,
+          "z": -3.9912527518773135,
+          "height": 2.975
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 7.835406541121483,
+          "z": -3.999819609855039,
+          "height": 0
+        },
+        {
+          "label": "난간",
+          "reached": true,
+          "x": 0.12108997299301105,
+          "z": -11.87636357829071,
+          "height": 0
+        },
+        {
+          "label": "붉은 배 보기",
+          "reached": true,
+          "x": 11.845454953230254,
+          "z": -11.998391485706009,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 15.97844785224492,
+          "z": 13.865130557404832,
+          "height": 0.08
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.12239812811818795,
+          "z": 16.97598626880303,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 15,
+      "id": "10",
+      "key": "phoneBedroom",
+      "result": [
+        {
+          "label": "침대",
+          "reached": true,
+          "x": 0,
+          "z": 5,
+          "height": 2.275
+        },
+        {
+          "label": "휴대전화",
+          "reached": true,
+          "x": 1.9553416865374484,
+          "z": -0.8660250596123462,
+          "height": 2.275
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -6.876866854911776,
+          "z": 4.919343991548391,
+          "height": 0
+        },
+        {
+          "label": "책상",
+          "reached": true,
+          "x": -11,
+          "z": 7,
+          "height": 2
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -7,
+          "z": 5,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -7,
+          "z": -8.825000000000033,
+          "height": 4
+        },
+        {
+          "label": "책장 보기",
+          "reached": true,
+          "x": -9.86851104359123,
+          "z": -8.036159463012412,
+          "height": 4
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -7.0692995791387805,
+          "z": -10.928397381524265,
+          "height": 0
+        },
+        {
+          "label": "창문 보기",
+          "reached": true,
+          "x": 9.872347453555149,
+          "z": -11.991986033030171,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 12.979102701005646,
+          "z": 11.839698400587835,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.12141210233654323,
+          "z": 14.475114396004518,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 16,
+      "id": "05",
+      "key": "dessertCafe",
+      "result": [
+        {
+          "label": "숟가락 인물",
+          "reached": true,
+          "x": 0,
+          "z": 2.1666666666666146,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -5.675876232678581,
+          "z": 7.87516287769397,
+          "height": 0
+        },
+        {
+          "label": "망고 정상",
+          "reached": true,
+          "x": -5.799999999999999,
+          "z": -4,
+          "height": 7.007539095243636
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -0.0720496912656766,
+          "z": 8.838509312680381,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 5.644957002653658,
+          "z": 8.022139628234777,
+          "height": 0
+        },
+        {
+          "label": "커피 정상",
+          "reached": true,
+          "x": 5.799999999999999,
+          "z": -4,
+          "height": 7.024112462762421
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0.0720496912656766,
+          "z": 8.838509312680381,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.0017957560389152874,
+          "z": 14.84643190114897,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 17,
+      "id": "15",
+      "key": "chineseRestaurant",
+      "result": [
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -6.888062260854095,
+          "z": 12.063964422369086,
+          "height": 0
+        },
+        {
+          "label": "앞 식탁1",
+          "reached": true,
+          "x": -7,
+          "z": 8,
+          "height": 1.6400000000000001
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -0.11193773914589839,
+          "z": 11.936035577630918,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 6.82944818481229,
+          "z": 11.998466065263418,
+          "height": 0
+        },
+        {
+          "label": "앞 식탁2",
+          "reached": true,
+          "x": 7,
+          "z": 8,
+          "height": 1.6400000000000001
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0.11717105604303302,
+          "z": 3.0836936114593105,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -6.841106705717156,
+          "z": 0.06884452159790352,
+          "height": 0
+        },
+        {
+          "label": "뒤 식탁1",
+          "reached": true,
+          "x": -7,
+          "z": -5,
+          "height": 1.6400000000000001
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -0.1171710560430339,
+          "z": -0.083693611459311,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 6.824015702026571,
+          "z": -0.002069468520785671,
+          "height": 0
+        },
+        {
+          "label": "뒤 식탁2",
+          "reached": true,
+          "x": 7,
+          "z": -5,
+          "height": 1.6400000000000001
+        },
+        {
+          "label": "직원",
+          "reached": true,
+          "x": 13.888062260853907,
+          "z": -8.936035577630808,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 15.984742823419278,
+          "z": 13.834304232372288,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.1461171980624117,
+          "z": 15.980203285037668,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 18,
+      "id": "17",
+      "key": "bananaMilkRecord",
+      "result": [
+        {
+          "label": "공책",
+          "reached": true,
+          "x": -10,
+          "z": 9,
+          "height": 0.225
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -5.522323411760692,
+          "z": 7.0099215163380855,
+          "height": 0
+        },
+        {
+          "label": "흰 계단",
+          "reached": true,
+          "x": -5.500050962217338,
+          "z": -0.9817141140634296,
+          "height": 4.48
+        },
+        {
+          "label": "초록 뚜껑",
+          "reached": true,
+          "x": -2,
+          "z": -2,
+          "height": 6.7250000000000005
+        },
+        {
+          "label": "도전자 보기",
+          "reached": true,
+          "x": -7.898449066397815,
+          "z": -7.898449066397815,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": -7.995804300996198,
+          "z": -10.871855691516005,
+          "height": 0
+        },
+        {
+          "label": "소파 보기",
+          "reached": true,
+          "x": 8.86204987148894,
+          "z": -10.998959888951989,
+          "height": 0
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 14.953864761459995,
+          "z": 11.827130804513999,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.17454551560974213,
+          "z": 14.962965420744233,
+          "height": 0
+        }
+      ]
+    },
+    {
+      "order": 19,
+      "id": "18",
+      "key": "moonCrater",
+      "result": [
+        {
+          "label": "큰 분화구",
+          "reached": true,
+          "x": -9,
+          "z": -2,
+          "height": 0.5022506244525529
+        },
+        {
+          "label": "큰 테두리",
+          "reached": true,
+          "x": -5.800000000000001,
+          "z": -2,
+          "height": 1.287280423568994
+        },
+        {
+          "label": "중앙 분화구",
+          "reached": true,
+          "x": 0.8871729525990252,
+          "z": 1.9336311485876612,
+          "height": 1.1635524717355912
+        },
+        {
+          "label": "중앙 테두리",
+          "reached": true,
+          "x": 3.482429221554431,
+          "z": 1.9997955772101481,
+          "height": 1.4579281408504698
+        },
+        {
+          "label": "오른쪽 분화구",
+          "reached": true,
+          "x": 7.98188956142236,
+          "z": 1.0040080692211073,
+          "height": 0.654784466672349
+        },
+        {
+          "label": "오른쪽 테두리",
+          "reached": true,
+          "x": 10.198552609215387,
+          "z": 1.0000026153983832,
+          "height": 0.6951761909133367
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.1122582501536552,
+          "z": 12.867912755872183,
+          "height": -0.33322743320332204
+        }
+      ]
+    },
+    {
+      "order": 20,
+      "id": "20",
+      "key": "constellationNight",
+      "result": [
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0,
+          "z": -12.866666666666704,
+          "height": 0.14
+        },
+        {
+          "label": "초승달",
+          "reached": true,
+          "x": -8.982347670247915,
+          "z": -12.999738484003673,
+          "height": 5.205764403552635
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0,
+          "z": -13,
+          "height": 0.14
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 3,
+          "z": 8,
+          "height": 0.56
+        },
+        {
+          "label": "로켓",
+          "reached": true,
+          "x": 9,
+          "z": -5,
+          "height": 5.7
+        },
+        {
+          "label": "waypoint",
+          "reached": true,
+          "x": 0.1013506642861561,
+          "z": 7.853604596031114,
+          "height": 0.14
+        },
+        {
+          "label": "나무",
+          "reached": true,
+          "x": -9.872507703570522,
+          "z": 4.048637545196429,
+          "height": 0
+        },
+        {
+          "label": "친구들",
+          "reached": true,
+          "x": 8,
+          "z": 1,
+          "height": 0
+        },
+        {
+          "label": "복귀",
+          "reached": true,
+          "x": 0.07578033654991875,
+          "z": 16.85080602382642,
+          "height": 0
+        }
+      ]
+    }
+  ]
+}
