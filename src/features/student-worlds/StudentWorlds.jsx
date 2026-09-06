@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { DrawingProjectContext, drawingProjects, getDrawingProject } from './projectRegistry';
 import { DEFAULT_PITCH } from './movement';
 import { readStoredAvatar, readStoredView, storeAvatar, storeView } from './avatarStore';
+import { isAvatarId } from './avatarCatalog';
 import './student-worlds.css';
 
 const ExploreScene = lazy(() => import('./ExploreScene'));
@@ -157,11 +158,11 @@ function ProjectWorlds() {
     return next;
   });
   const first = worldCatalog[0];
-  const [avatar, setAvatar] = useState(readStoredAvatar);
+  const [avatar, setAvatar] = useState(() => (isAvatarId(params.get('avatar')) ? params.get('avatar') : readStoredAvatar()));
   const [picking, setPicking] = useState(false);
   const chooseAvatar = id => { storeAvatar(id); setAvatar(id); setPicking(false); };
   const picker = (picking || !avatar) && <Suspense fallback={<div className="sw-avatar-modal" />}><AvatarPicker current={avatar} onChoose={chooseAvatar} onClose={() => setPicking(false)} /></Suspense>;
-  if (params.get('avatarPreview')) return <div style={{ height: '100vh', background: '#eef2ee' }}><Suspense fallback={null}><AvatarPreview avatar={params.get('avatarPreview')} spin={params.get('spin') !== '0'} behavior={params.get('behavior') || 'idle'} className="sw-avatar-preview-page" /></Suspense></div>;
+  if (params.get('avatarPreview')) return <div style={{ height: '100vh', background: '#eef2ee' }}><Suspense fallback={null}><AvatarPreview avatar={params.get('avatarPreview')} spin={params.get('spin') !== '0'} behavior={params.get('behavior') || 'idle'} yaw={Number(params.get('yaw') || 0) * Math.PI / 180} zoom={Number(params.get('zoom') || 1)} walking={params.get('walk') === '1'} className="sw-avatar-preview-page" /></Suspense></div>;
   const available = worldCatalog.filter(world => world.scene).length;
   if (selected?.scene) return <><Exploration key={selected.id} world={selected} choose={setSelected} leave={() => setSelected(null)} avatar={avatar} pickerOpen={!!picker} openPicker={() => setPicking(true)} />{picker}</>;
   if (selected) return <div className="sw-library sw-pending">

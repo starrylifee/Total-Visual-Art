@@ -37,4 +37,4 @@
 - 탐험 캐릭터는 `Character.jsx`의 관절 뼈대를 그대로 쓰고, `avatar` 속성으로 `avatarSkins.jsx`의 마스코트 몸체(신곰이·신답이·용석핑)를 갈아 끼운다. 걷기·수영·2단 점프 애니메이션은 공통이다. 새 마스코트는 `avatarCatalog.js`에 항목을 추가하고 스킨 컴포넌트에서 bodyRef·headRef·eyesRef와 hip/knee/arm/elbow 8개 관절 ref를 모두 연결하면 된다.
 - `/worlds` 첫 방문에는 `AvatarPicker`가 셋 중 하나를 고르게 하고 localStorage(`student-worlds-avatar`)에 저장한다. 목록 상단과 탐험 도구모음의 "아바타 바꾸기"로 언제든 바꿀 수 있다. 원본 참고 이미지는 저장소에 넣지 않았다.
 - 시점은 기본 3인칭이고 도구모음 버튼 또는 V키로 1인칭과 전환한다(`student-worlds-view`). 1인칭에서는 아바타와 발밑 표식을 숨기고 눈높이 1.5(수영 시 0.75)에서 바라본다.
-- `/worlds?avatarPreview=singom&spin=0`은 마스코트 정면 확인용 개발 화면이다. 백그라운드 탭에서는 프레임이 멈춰 비어 보일 수 있다.
+- `/worlds?avatarPreview=singom&spin=0`은 마스코트 정면 확인용 개발 화면이다. `yaw=90`(도 단위 회전), `zoom=1.6`(카메라 거리 배율), `walk=1`(걷기 자세), `behavior=wave`를 붙여 각도·크기·동작을 바꿔 볼 수 있다. 백그라운드 탭에서는 프레임이 멈춰 비어 보일 수 있다.
